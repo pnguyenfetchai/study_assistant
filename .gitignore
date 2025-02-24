@@ -1,0 +1,13 @@
+/private_keys.json
+/venv
+
+/agents/private_keys.json
+/agents/__pycache__
+/agents/.env
+
+
+/knowledgebase/private_keys.json
+/knowledgebase/.env
+/knowledgebase/__pycache__/
+/knowledgebase/faiss_db/
+
