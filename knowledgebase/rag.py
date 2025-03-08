@@ -11,6 +11,7 @@ from canvas import get_all_course_materials
 import os
 import faiss
 from dotenv import load_dotenv
+from parse_files import extract_text_from_files
 
 load_dotenv()
 
@@ -36,14 +37,20 @@ query_protocol = Protocol("Query Protocol")
 faiss_path = "faiss_db"
 index_file = os.path.join(faiss_path, "index.faiss")
 
+
 def chunk_and_embed_canvas_data():
     all_materials = get_all_course_materials()
     docs = []
 
     for course_name, data in all_materials.items():
         for assignment in data["assignments"]:
-            docs.append(f"Course: {course_name}, Assignment: {assignment.get('name', 'Unnamed Assignment')}, "
-                        f"Description: {assignment.get('description', 'No Description')}")
+            if isinstance(assignment, dict):
+                docs.append(f"Course: {course_name}, Assignment: {assignment.get('name', 'Unnamed Assignment')}, "
+                            f"Description: {assignment.get('description', 'No Description')}")
+
+
+    course_files_text = extract_text_from_files("course_files")
+    docs.extend(course_files_text)
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
     chunked_docs = [chunk for doc in docs for chunk in text_splitter.split_text(doc)]

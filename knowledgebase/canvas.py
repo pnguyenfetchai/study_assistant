@@ -45,10 +45,35 @@ def get_all_course_materials():
         course_assignments = get_canvas_assignments(course_id)
         assignments = []
 
+        files_url = f"{BASE_URL}/courses/{course_id}/files"
+
+        if not os.path.exists("course_files"):
+            while files_url:
+                response = requests.get(files_url, headers=get_headers())
+                response.raise_for_status()
+                data = response.json()
+                for file in data:
+                    file_name = file['display_name']
+                    file_url = file['url']
+                    file_path = os.path.join("course_files", file_name)
+
+                    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+                    with requests.get(file_url, stream=True) as file_response:
+                        file_response.raise_for_status()
+                        with open(file_path, 'wb') as f:
+                            for chunk in file_response.iter_content(chunk_size=8192):
+                                f.write(chunk)
+                # Check for pagination
+                files_url = response.links.get('next', {}).get('url')
+
         for assignment in course_assignments:
             assignment_id = assignment["id"]
             assignment_info = get_canvas_assignment_info(course_id, assignment_id)
-            assignments.append(assignment_info)
+            if isinstance(assignment_info, dict):
+                assignments.append(assignment_info)
+            else:
+                print("drake radindrake", assignment_info)
 
         all_materials[course_name] = {
             "assignments": assignments if assignments else "No assignments available",
@@ -61,7 +86,7 @@ def get_all_course_materials():
 
 def get_all_available_canvas_courses():
     try:
-        response = requests.get(f"{BASE_URL}/courses", headers=get_headers())
+        response = requests.get(f"{BASE_URL}/courses?enrollment_state=active", headers=get_headers())
         response.raise_for_status()  
 
         response_json = response.json()
@@ -100,18 +125,18 @@ def get_canvas_assignments(course_id: int):
 def get_canvas_assignment_info(course_id: str, assignment_id: str):
     try:
         response = requests.get(f"{BASE_URL}/courses/{course_id}/assignments/{assignment_id}", headers=get_headers())
+        response.raise_for_status()  # Ensure we handle failed API calls
         response_json = response.json()
 
-        print("response_json", response_json)
-        
-        cleaned_assignment = []
-        cleaned_assignment.append({
-            "id": response_json["id"],
-            "name": response_json["name"],
-            "description": response_json.get("description", "")
-        })
-    
-        return cleaned_assignment[0]
-    except Exception as e:
-        print(f"Error getting assignment: {e}")
+        return {
+            "id": response_json.get("id", "Unknown ID"),
+            "name": response_json.get("name", "Unnamed Assignment"),
+            "description": response_json.get("description", "No Description")
+        }
+
+    except requests.exceptions.RequestException as e:
+        print(f"⚠️ API Request Failed: {e}")
+        return {}  
+    except KeyError as e:
+        print(f"⚠️ Missing Key in API Response: {e}")
         return {}
