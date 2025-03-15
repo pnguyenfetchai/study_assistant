@@ -15,7 +15,8 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 class QueryRequest(Model):
     query: str
 
-class QueryResponse(Model):
+class RequestResponse(Model):
+    request: str
     response: str
 
 
@@ -28,6 +29,7 @@ prime_agent = Agent(
     name="prime_agent",
     port=8003,
     endpoint=["http://127.0.0.1:8003/submit"],
+    mailbox=True
 )
 
 
@@ -40,22 +42,23 @@ def classify_query_with_llm(query: str) -> str:
     )
     return response.choices[0].message.content.strip()
 
-@query_protocol.on_message(model=QueryResponse) 
-async def receive_query_response(ctx: Context, sender: str, response: QueryResponse):
-    ctx.logger.info(f"Prime Agent received response: {response.response}")
-    await ctx.send(USER_AGENT_ADDRESS, response)
+# @query_protocol.on_message(model=QueryResponse) 
+# async def receive_query_response(ctx: Context, sender: str, response: QueryResponse):
+#     ctx.logger.info(f"Prime Agent received response: {response.response}")
+#     await ctx.send(USER_AGENT_ADDRESS, response)
 
 
-@prime_agent.on_message(model=QueryRequest)
-async def handle_user_query(ctx: Context, sender: str, message: QueryRequest):
-    classification = classify_query_with_llm(message.query)
+@prime_agent.on_message(model=RequestResponse)
+async def handle_user_query(ctx: Context, sender: str, message: RequestResponse):
+    ctx.logger.info(f"Received query: {message}")
+    classification = classify_query_with_llm(message.request)
     
     if classification == "general":
-        ctx.logger.info(f"Forwarding general query to Query Agent: {message.query}")
+        ctx.logger.info(f"Forwarding general query to Query Agent: {message.request}")
         await ctx.send(QUERY_AGENT_ADDRESS, message)
     else:
-        ctx.logger.info(f"Forwarding problem-solving query to Problem Solver Agent: {message.query}")
-        await ctx.send(PROBLEM_SOLVER_AGENT_ADDRESS, QueryRequest(query=message.query))
+        ctx.logger.info(f"Forwarding problem-solving query to Problem Solver Agent: {message.request}")
+        await ctx.send(PROBLEM_SOLVER_AGENT_ADDRESS, QueryRequest(query=message.request))
 
 prime_agent.include(query_protocol)
 prime_agent.include(problem_protocol)

@@ -18,16 +18,21 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 embedding_model = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
 
+ANALYZER_AGENT = os.getenv("ANALYZER_AGENT_ADDRESS")
+PRIME_AGENT = os.getenv("PRIME_AGENT_ADDRESS")
+
 class QueryRequest(Model):
     query: str
 
-class QueryResponse(Model):
+class RequestResponse(Model):
+    request: str
     response: str
 
 query_agent = Agent(
     name="query_agent",
     port=8001,
-    endpoint=["http://127.0.0.1:8001/submit"]
+    endpoint=["http://127.0.0.1:8001/submit"],
+    mailbox=True
 )
 
 QUERY_AGENT_ADDRESS = query_agent.address
@@ -103,16 +108,19 @@ retrieval_chain = create_retrieval_chain(
     combine_docs_chain=combine_docs_chain
 )
 
-@query_protocol.on_message(model=QueryRequest)
-async def query_rag_system(ctx: Context, sender: str, query: QueryRequest):
-    ctx.logger.info(f"Query Agent received query: {query.query}")
+@query_protocol.on_message(model=RequestResponse)
+async def query_rag_system(ctx: Context, sender: str, query: RequestResponse):
+    ctx.logger.info(f"Query Agent received query: {query.request}")
 
-    retrieved_docs = retriever.invoke(query.query)
+    retrieved_docs = retriever.invoke(query.request)
     context = "\n".join([doc.page_content for doc in retrieved_docs])
 
-    response = retrieval_chain.invoke({"input": query.query, "context": context})
+    response = retrieval_chain.invoke({"input": query.request, "context": context})
 
-    await ctx.send(sender, QueryResponse(response=response['answer']))
+    if sender == PRIME_AGENT:
+        await ctx.send(ANALYZER_AGENT, RequestResponse(request=query.request,response=response['answer']))
+    else:
+        await ctx.send(sender, RequestResponse(request=query.request, response=response['answer']))
 
 query_agent.include(query_protocol)
 
