@@ -21,7 +21,7 @@ user_agent = Agent(
 
 @user_agent.on_event("startup")  
 async def send_initial_query(ctx: Context):
-    query_text = "tell me about the time of the internship fair in spring 2026"
+    query_text = "give ma a piechart of submitted assignments and unsubmitted assignments"
     ctx.logger.info(f"Sending query to Prime Agent: {query_text}")
     await ctx.send(PRIME_AGENT_ADDRESS, RequestResponse(request=query_text, response=""))
 

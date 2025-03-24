@@ -42,10 +42,6 @@ def classify_query_with_llm(query: str) -> str:
     )
     return response.choices[0].message.content.strip()
 
-# @query_protocol.on_message(model=QueryResponse) 
-# async def receive_query_response(ctx: Context, sender: str, response: QueryResponse):
-#     ctx.logger.info(f"Prime Agent received response: {response.response}")
-#     await ctx.send(USER_AGENT_ADDRESS, response)
 
 
 @prime_agent.on_message(model=RequestResponse)

@@ -7,6 +7,7 @@ load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 PRIME_AGENT_ADDRESS = os.getenv("PRIME_AGENT_ADDRESS")
+RESPONDENT_AGENT_ADDRESS = os.getenv("RESPONDENT_AGENT_ADDRESS")
 USER_AGENT_ADDRESS = os.getenv("USER_AGENT_ADDRESS")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -24,12 +25,13 @@ protocol = Protocol("query_analysis")
 async def analyze_query(ctx: Context, sender: str, msg: RequestResponse):
     """Compares the response with the original request and forwards accordingly."""
     ctx.logger.info(f"Received query analysis request from {sender}")
+    ctx.logger.info(f"ryan pham: {msg.request} |||| {msg.response}")
     
     is_correct = await check_response(msg.request, msg.response)
     
     if is_correct:
-        ctx.logger.info("Response is correct. Forwarding to user agent.")
-        await ctx.send(USER_AGENT_ADDRESS, RequestResponse(request=msg.request, response=msg.response))
+        ctx.logger.info("Response is correct. Forwarding to respondent agent for tool analysis.")
+        await ctx.send(RESPONDENT_AGENT_ADDRESS, RequestResponse(request=msg.request, response=msg.response))
     else:
         ctx.logger.info("Response is incorrect. Forwarding to prime agent for reevaluation.")
         await ctx.send(PRIME_AGENT_ADDRESS, RequestResponse(request=msg.request, response=msg.response))

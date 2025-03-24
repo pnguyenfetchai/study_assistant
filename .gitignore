@@ -4,6 +4,8 @@
 /agents/private_keys.json
 /agents/__pycache__
 /agents/.env
+/agents/tools/.env
+/agents/tools/private_keys.json
 
 
 /knowledgebase/private_keys.json

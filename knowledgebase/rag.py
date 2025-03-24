@@ -87,7 +87,7 @@ prompt_template = ChatPromptTemplate.from_template(
     You have access to a rich database of course materials, including lecture notes, assignments, and study guides. 
     Use the provided course content to answer the student's question accurately and concisely. 
     If the answer is not found in the course materials, provide guidance on how the student can find the answer.
-
+    MUST DO: If the student ask for create a chart, please try your best to provide necessary data based on the rag database. If there is no data available, just make the data up and explain all the necessary legends and details
     ### Context (from course materials):
     {context}
 
