@@ -7,6 +7,7 @@ import os
 from openai import OpenAI
 import re
 from dotenv import load_dotenv
+import json
 
 class ToolRequest(Model):
     params: Dict[str, Any]
@@ -40,17 +41,14 @@ async def extract_data_with_llm(instruction: str) -> tuple[list, list]:
     )
     try:
         text = completion.choices[0].message.content
-        print("🧠 LLM raw output:", text)
+        print(" LLM raw output:", text)
         
-        # Extract the JSON object
-        import json
+   
         data = json.loads(text)
         
-        # Convert values to float
         values = [float(v) for v in data['values']]
         labels = data['labels']
         
-        # Ensure same length
         min_len = min(len(values), len(labels))
         return labels[:min_len], values[:min_len]
         

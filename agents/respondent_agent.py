@@ -18,7 +18,6 @@ VISUALIZATION_AGENT_ADDRESS = os.getenv("VISUALIZATION_AGENT_ADDRESS")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-# Message models
 class RequestResponse(Model):
     request: str
     response: str
@@ -31,14 +30,12 @@ class ToolResponse(Model):
 
 
 
-# Create the respondent agent instance
 respondent_agent = Agent(
     name="respondent_agent",
     port=8007,
     endpoint=["http://127.0.0.1:8007/submit"]
 )
 
-# Respondent agent setup
 respondent_protocol = Protocol("response_analysis")
 
 async def determine_tool_need(request: str, response: str) -> str:
@@ -68,6 +65,7 @@ async def handle_response(ctx: Context, sender: str, msg: RequestResponse):
         decision = await determine_tool_need(msg.request, msg.response)
         decision = decision.strip().strip("'").strip('"')
         
+        
         if decision.startswith("TOOL"):
             # Extract numbers from response for visualization
             # numbers = [float(num) for num in re.findall(r"\d+\.\d+|\d+", msg.response)]
@@ -75,6 +73,9 @@ async def handle_response(ctx: Context, sender: str, msg: RequestResponse):
             # Send visualization request
 
             ctx.logger.info("radindra", type(msg.response))
+
+            # for now just use pie chart tool anyway when tool is needed
+            # will create more tool in the future by ultilizing dictiontionary instead of title and data
             await ctx.send(VISUALIZATION_AGENT_ADDRESS, ToolRequest(
                 params={'data': msg.response, 'title': 'Generated Visualization'}
             ))
