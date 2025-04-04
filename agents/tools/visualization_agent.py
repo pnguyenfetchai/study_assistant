@@ -11,9 +11,11 @@ import json
 
 class ToolRequest(Model):
     params: Dict[str, Any]
+    user: str = None
 
 class ToolResponse(Model):
     result: Any
+    user: str = None
 
 # Load OpenAI API
 
@@ -25,7 +27,8 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 visualization_agent = Agent(
     name="visualization_agent",
     port=8009,
-    endpoint=["http://127.0.0.1:8009/submit"]
+    endpoint=["http://127.0.0.1:8009/submit"],
+    mailbox=True
 )
 
 visualization_protocol = Protocol("visualization")
@@ -79,7 +82,7 @@ async def handle_visualization(ctx: Context, sender: str, msg: ToolRequest):
         buffer.seek(0)
         result = base64.b64encode(buffer.read()).decode()
 
-        await ctx.send(sender, ToolResponse(result=result))
+        await ctx.send(sender, ToolResponse(result=result,user=msg.user))
 
     except Exception as e:
         ctx.logger.error(f"Error in visualization: {e}")

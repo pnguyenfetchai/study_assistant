@@ -1,5 +1,6 @@
 from uagents import Agent, Context, Protocol, Model
 from dotenv import load_dotenv
+import asyncio
 import os
 from openai import OpenAI
 
@@ -14,10 +15,12 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 
 class QueryRequest(Model):
     query: str
+    user: str = None
 
 class RequestResponse(Model):
     request: str
     response: str
+    user: str = None
 
 
 query_protocol = Protocol("Query Handling")
@@ -44,18 +47,20 @@ def classify_query_with_llm(query: str) -> str:
 
 
 
-@prime_agent.on_message(model=RequestResponse)
+@prime_agent.on_query(model=RequestResponse)
 async def handle_user_query(ctx: Context, sender: str, message: RequestResponse):
+    print("user agent address: ", sender)
     ctx.logger.info(f"Received query: {message}")
     classification = classify_query_with_llm(message.request)
     
     if classification == "general":
         ctx.logger.info(f"Forwarding general query to Query Agent: {message.request}")
-        await ctx.send(QUERY_AGENT_ADDRESS, message)
+        await ctx.send(QUERY_AGENT_ADDRESS, RequestResponse(request=message.request, response=message.response, user=sender))
     else:
         ctx.logger.info(f"Forwarding problem-solving query to Problem Solver Agent: {message.request}")
-        await ctx.send(PROBLEM_SOLVER_AGENT_ADDRESS, QueryRequest(query=message.request))
+        await ctx.send(PROBLEM_SOLVER_AGENT_ADDRESS, QueryRequest(query=message.request, user=sender))
 
+    
 prime_agent.include(query_protocol)
 prime_agent.include(problem_protocol)
 

@@ -8,6 +8,8 @@ import os
 from openai import OpenAI
 import re
 import asyncio
+import aiohttp
+
 
 load_dotenv()
 
@@ -21,19 +23,23 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 class RequestResponse(Model):
     request: str
     response: str
+    user: str = None
 
 class ToolRequest(Model):
     params: Dict[str, Any]
+    user: str = None
 
 class ToolResponse(Model):
     result: Any
+    user: str = None
 
 
 
 respondent_agent = Agent(
     name="respondent_agent",
     port=8007,
-    endpoint=["http://127.0.0.1:8007/submit"]
+    endpoint=["http://127.0.0.1:8007/submit"],
+    mailbox=True
 )
 
 respondent_protocol = Protocol("response_analysis")
@@ -44,7 +50,29 @@ async def determine_tool_need(request: str, response: str) -> str:
         completion = client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are an AI assistant that decides whether visualization is needed. Respond in this format only:\n\n'NO TOOL' (if no visualization is needed)\n\nOR\n\n'TOOL , tools is visualization' (if visualization is needed)."},
+                {"role": "system", "content": """You are an AI assistant that determines whether a visualization (e.g., a chart, diagram, graph, or image) is needed to help the student understand the response better.
+
+                Follow these rules when making a decision:
+                1. If the response explains concepts, definitions, or theoretical material without any need for visual aid — respond with:
+                NO TOOL
+
+                2. If the request involves data, trends, comparisons, processes, categories, diagrams, timelines, charts, or anything that would *clearly benefit* from a visual representation — respond with:
+                TOOL , tools is visualization
+
+                Only return **one** of the two responses above exactly — no extra words or punctuation.
+
+                Examples of when to say TOOL:
+                - "Can you show me the architecture of this system?"
+                - "Create a pie chart of time spent per topic."
+                - "Compare CPU and memory usage."
+
+                Examples of when to say NO TOOL:
+                - "What is polymorphism in OOP?"
+                - "Explain the difference between HTTP and HTTPS."
+                - "What are the advantages of unit testing?"
+
+                Do not try to explain your decision — just output the label.
+                """},
                 {"role": "user", "content": f"Request: {request}\nResponse: {response}\nDo we need visualization?"}
             ]
         )
@@ -82,11 +110,16 @@ async def handle_response(ctx: Context, sender: str, msg: RequestResponse):
             
             # ctx.logger.info(f"Sent visualization request for {len(numbers)} numbers")
         else:
-            ctx.logger.info("No visualization needed")
-            await ctx.send(USER_AGENT_ADDRESS, RequestResponse(
-            request=msg.request, 
-            response=msg.response
-        ))
+            try:
+                with open('response.txt', 'w') as file:
+                    file.write(str(msg.response))
+                
+                
+
+            except Exception as e:
+                ctx.logger.error(f"Failed to write response to file: {e}")
+
+            
         
         
     except Exception as e:
@@ -97,13 +130,14 @@ async def handle_visualization_response(ctx: Context, sender: str, response: Too
     """Handle visualization responses from tool agents."""
     ctx.logger.info(f"Received visualization response from  visualization agent")
 
-    img_data = base64.b64decode(response.result)
-    with open("visualization_output.png", "wb") as f:
-        f.write(img_data)
+    try:
+        with open('visualization.txt', 'w') as file:
+            file.write(str(response.result))
+        
+    except Exception as e:
+        ctx.logger.error(f"Failed to write response to file: {e}")
 
-    ctx.logger.info("Saved visualization image as visualization_output.png")
 
-    await ctx.send(USER_AGENT_ADDRESS, RequestResponse(request="filler", response=response.result))
 
 respondent_agent.include(respondent_protocol)
 

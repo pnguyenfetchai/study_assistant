@@ -15,10 +15,12 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 
 class QueryRequest(Model):
     query: str
+    user: str = None
 
 class RequestResponse(Model):
     request: str
     response: str
+    user: str = None
 
 problem_protocol = Protocol("Problem Solving")
 query_protocol = Protocol("Query Handling")
@@ -27,6 +29,7 @@ problem_solver_agent = Agent(
     name="problem_solver_agent",
     port=8004,
     endpoint=["http://127.0.0.1:8004/submit"],
+    mailbox=True
 )
 
 
@@ -36,10 +39,10 @@ problem = {}
 async def solve_problem(ctx: Context, sender: str, message: QueryRequest):
     ctx.logger.info(f"Received problem-solving request: {message.query}")
 
-    problem[sender] = message.query
+    problem[message.user] = message.query
     
     query_text = f"Provide relevant materials for solving: {message.query} DO NOT ATTEMPT TO SOLVE THE PROBLEM AND ONLY PROVIDE THE NECESSARY CONTEXT FROM THE KNOWLEDGE BASE THAT HELP SOLVING THE PROBLEM"
-    await ctx.send(QUERY_AGENT_ADDRESS, QueryRequest(query=query_text))
+    await ctx.send(QUERY_AGENT_ADDRESS, RequestResponse(request=query_text, response="", user=message.user))
 
 @query_protocol.on_message(model=RequestResponse)
 async def receive_query_response(ctx: Context, sender: str, requestresponse: RequestResponse):
@@ -50,13 +53,13 @@ async def receive_query_response(ctx: Context, sender: str, requestresponse: Req
         model="gpt-4",
         messages=[
             {"role": "system", "content": "Solve the given problem using relevant course materials."},
-            {"role": "user", "content": f"Original Problem: {problem[PRIME_AGENT_ADDRESS]}\nContext: {requestresponse.response}"}
+            {"role": "user", "content": f"Original Problem: {problem[requestresponse.user]}\nContext: {requestresponse.response}"}
         ]
     )
     solution = problem_solution.choices[0].message.content
     
     ctx.logger.info(f"Sending problem solution: {solution}")
-    await ctx.send(ANALYZER_AGENT_ADDRESS, RequestResponse(request=requestresponse.request,response=solution))
+    await ctx.send(ANALYZER_AGENT_ADDRESS, RequestResponse(request=requestresponse.request,response=solution, user=requestresponse.user))
 
 problem_solver_agent.include(problem_protocol)
 problem_solver_agent.include(query_protocol)

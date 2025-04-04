@@ -17,6 +17,7 @@ user_agent = Agent(
     name="user_agent",
     port=8005,
     endpoint=["http://127.0.0.1:8005/submit"],
+    mailbox=True
 )
 
 @user_agent.on_event("startup")  

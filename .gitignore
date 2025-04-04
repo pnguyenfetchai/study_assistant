@@ -6,6 +6,7 @@
 /agents/.env
 /agents/tools/.env
 /agents/tools/private_keys.json
+/agents/response.txt
 
 
 /knowledgebase/private_keys.json

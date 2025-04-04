@@ -15,9 +15,11 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 class RequestResponse(Model):
     request: str
     response: str
+    user: str = None
 
 class QueryRequest(Model):
     query: str
+    user: str = None
 
 protocol = Protocol("query_analysis")
 
@@ -31,10 +33,10 @@ async def analyze_query(ctx: Context, sender: str, msg: RequestResponse):
     
     if is_correct:
         ctx.logger.info("Response is correct. Forwarding to respondent agent for tool analysis.")
-        await ctx.send(RESPONDENT_AGENT_ADDRESS, RequestResponse(request=msg.request, response=msg.response))
+        await ctx.send(RESPONDENT_AGENT_ADDRESS, RequestResponse(request=msg.request, response=msg.response, user=msg.user))
     else:
         ctx.logger.info("Response is incorrect. Forwarding to prime agent for reevaluation.")
-        await ctx.send(PRIME_AGENT_ADDRESS, RequestResponse(request=msg.request, response=msg.response))
+        await ctx.send(PRIME_AGENT_ADDRESS, RequestResponse(request=msg.request, response=msg.response, user=msg.user))
 
 async def check_response(question: str, answer: str) -> bool:
     """Uses OpenAI to evaluate whether the response is correct."""
@@ -58,7 +60,8 @@ async def check_response(question: str, answer: str) -> bool:
 analyzer_agent = Agent(
     name="analyzer_agent",
     port=8006,
-    endpoint=["http://127.0.0.1:8006/submit"]
+    endpoint=["http://127.0.0.1:8006/submit"],
+    mailbox=True
 )
 
 # Attach the protocol separately

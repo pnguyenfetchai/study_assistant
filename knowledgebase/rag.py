@@ -23,10 +23,12 @@ PRIME_AGENT = os.getenv("PRIME_AGENT_ADDRESS")
 
 class QueryRequest(Model):
     query: str
+    user: str = None
 
 class RequestResponse(Model):
     request: str
     response: str
+    user: str = None
 
 query_agent = Agent(
     name="query_agent",
@@ -38,6 +40,7 @@ query_agent = Agent(
 QUERY_AGENT_ADDRESS = query_agent.address
 
 query_protocol = Protocol("Query Protocol")
+problem_protocol = Protocol("Problem Solving")
 
 faiss_path = "faiss_db"
 index_file = os.path.join(faiss_path, "index.faiss")
@@ -48,6 +51,7 @@ def chunk_and_embed_canvas_data():
     docs = []
 
     for course_name, data in all_materials.items():
+
         for assignment in data["assignments"]:
             if isinstance(assignment, dict):
                 docs.append(f"Course: {course_name}, Assignment: {assignment.get('name', 'Unnamed Assignment')}, "
@@ -83,12 +87,15 @@ retriever = vector_store.as_retriever()
 llm = ChatOpenAI(model_name="gpt-4", openai_api_key=OPENAI_API_KEY)
 
 prompt_template = ChatPromptTemplate.from_template(
-    """You are an AI-powered study assistant specializing in helping students with their coursework. 
-    You have access to a rich database of course materials, including lecture notes, assignments, and study guides. 
-    Use the provided course content to answer the student's question accurately and concisely. 
-    If the answer is not found in the course materials, provide guidance on how the student can find the answer.
-    MUST DO: If the student ask for create a chart, please try your best to provide necessary data based on the rag database. If there is no data available, just make the data up and explain all the necessary legends and details
-    ### Context (from course materials):
+    """You are an AI-powered study assistant that helps students with their coursework. 
+    You have access to a rich RAG database of course materials, including lecture notes, assignments, and study guides that have been embedded into your system. 
+    Use the provided course content to answer the student's question accurately and concisely.
+
+    MUST DO: If the course content is insufficient or unrelated, confidently generate a plausible and helpful answer based on your general academic knowledge, reasoning, and best assumptions. 
+    Do not tell the student you don’t know and MUST LIE ABOUT YOU KNOW ABOUT IT AND MUST START WITH THE PHRASE "Based on the course content, "— always provide a thoughtful, believable, and useful response.
+
+    MUST DO: If the student asks you to create a chart or diagram, try your best to generate the necessary data based on the RAG content. If no data is available, fabricate reasonable values, include all relevant legends, labels, and explanations.
+
     {context}
 
     ### Student's Question:
@@ -118,11 +125,21 @@ async def query_rag_system(ctx: Context, sender: str, query: RequestResponse):
     response = retrieval_chain.invoke({"input": query.request, "context": context})
 
     if sender == PRIME_AGENT:
-        await ctx.send(ANALYZER_AGENT, RequestResponse(request=query.request,response=response['answer']))
+        await ctx.send(ANALYZER_AGENT, RequestResponse(request=query.request,response=response['answer'], user=query.user))
     else:
-        await ctx.send(sender, RequestResponse(request=query.request, response=response['answer']))
+        await ctx.send(sender, RequestResponse(request=query.request, response=response['answer'], user=query.user))
 
 query_agent.include(query_protocol)
+
+@problem_protocol.on_message(model=QueryRequest)
+async def handle_problem_solving(ctx: Context, sender: str, query: QueryRequest):
+    ctx.logger.info(f"Query Agent received problem-solving request: {query.query}")
+    retrieved_docs = retriever.invoke(query.query)
+    context = "\n".join([doc.page_content for doc in retrieved_docs])
+
+    response = retrieval_chain.invoke({"input": query.query, "context": context})
+
+    await ctx.send(sender, RequestResponse(request=query.query, response=response['answer'], user=query.user))
 
 if __name__ == "__main__":
     query_agent.run()
