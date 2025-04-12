@@ -1,11 +1,14 @@
 from dotenv import load_dotenv
 import requests
 import os
+from uagents import Agent, Context, Protocol, Model
+
 
 load_dotenv()
 
-BASE_URL = "https://canvas.instructure.com/api/v1"
+BASE_URL = "https://sjsu.instructure.com/api/v1"
 CANVAS_TOKEN = os.getenv("CANVAS_TOKEN")
+
 
 
 def get_headers():
@@ -35,37 +38,19 @@ def get_all_course_materials():
     courses = get_all_available_canvas_courses()
     all_materials = {}
 
-
     for course in courses:
         if "name" not in course:
             continue  
 
         course_id = course["id"]
         course_name = course["name"]
+        safe_course_name = "".join(c for c in course_name if c.isalnum() or c in (' ', '_')).rstrip()
+        course_folder = os.path.join("course_files", safe_course_name)
+        os.makedirs(course_folder, exist_ok=True)
+
+        # === Assignments ===
         course_assignments = get_canvas_assignments(course_id)
         assignments = []
-
-        files_url = f"{BASE_URL}/courses/{course_id}/files"
-
-        if not os.path.exists("course_files"):
-            while files_url:
-                response = requests.get(files_url, headers=get_headers())
-                response.raise_for_status()
-                data = response.json()
-                for file in data:
-                    file_name = file['display_name']
-                    file_url = file['url']
-                    file_path = os.path.join("course_files", file_name)
-
-                    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
-                    with requests.get(file_url, stream=True) as file_response:
-                        file_response.raise_for_status()
-                        with open(file_path, 'wb') as f:
-                            for chunk in file_response.iter_content(chunk_size=8192):
-                                f.write(chunk)
-                # Check for pagination
-                files_url = response.links.get('next', {}).get('url')
 
         for assignment in course_assignments:
             assignment_id = assignment["id"]
@@ -73,14 +58,49 @@ def get_all_course_materials():
             if isinstance(assignment_info, dict):
                 assignments.append(assignment_info)
             else:
-                print("drake radindrake", assignment_info)
+                print("⚠️ Invalid assignment info:", assignment_info)
 
+        # === Files ===
+        files_url = f"{BASE_URL}/courses/{course_id}/files"
+        try:
+            while files_url:
+                response = requests.get(files_url, headers=get_headers())
+                response.raise_for_status()
+                data = response.json()
+
+                for file in data:
+                    file_name = file['display_name']
+                    file_url = file['url']
+                    file_path = os.path.join(course_folder, file_name)
+
+                    if os.path.exists(file_path):
+                        print(f"✅ Skipping existing file: {file_path}")
+                        continue
+
+                    with requests.get(file_url, stream=True) as file_response:
+                        file_response.raise_for_status()
+                        with open(file_path, 'wb') as f:
+                            for chunk in file_response.iter_content(chunk_size=8192):
+                                f.write(chunk)
+                        print(f"📥 Downloaded: {file_path}")
+
+                files_url = response.links.get('next', {}).get('url')
+
+        except requests.exceptions.HTTPError as e:
+            if response.status_code == 403:
+                print(f"🚫 Skipping course '{course_name}' (ID: {course_id}) due to restricted file access.")
+            else:
+                print(f"❌ Unexpected error with course '{course_name}': {e}")
+            continue  # Skip to the next course
+
+        # === Store collected materials ===
         all_materials[course_name] = {
             "assignments": assignments if assignments else "No assignments available",
             "description": course.get("description", "No description available")
         }
 
     return all_materials
+
 
 
 

@@ -9,10 +9,14 @@ from pptx import Presentation  # For PowerPoint files
 def extract_text_from_pdf(pdf_path):
     """Extract text from a PDF file."""
     text = ""
-    doc = fitz.open(pdf_path)
-    for page in doc:
-        text += page.get_text("text") + "\n"
+    try:
+        doc = fitz.open(pdf_path)
+        for page in doc:
+            text += page.get_text("text") + "\n"
+    except Exception as e:
+        print(f"⚠️ Error processing PDF {pdf_path}: {e}")
     return text
+
 
 def extract_text_from_docx(docx_path):
     """Extract text from a Word document."""
@@ -73,7 +77,15 @@ def extract_text_from_files(directory):
             else:
                 continue  # Skip unsupported files
             
-            if text:  # Only add if text is extracted
-                docs.append(f"File: {file}, Content: {text}")
-    
+            if text:  
+                relative_path = os.path.relpath(file_path, directory)
+                course_folder = relative_path.split(os.sep)[0]
+                docs.append(f"Course: {course_folder}, File: {file}, Content: {text}")
+
+    print("dep trai qua di: ", docs)
     return docs
+
+if __name__ == "__main__":
+    docs = extract_text_from_files("course_files")
+    for doc in docs:
+        print("📄", doc[:300])

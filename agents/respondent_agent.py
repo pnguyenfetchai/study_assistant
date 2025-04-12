@@ -11,7 +11,7 @@ import asyncio
 
 load_dotenv()
 
-USER_AGENT_ADDRESS = os.getenv("USER_AGENT_ADDRESS")
+PRIME_AGENT_ADDRESS = os.getenv("PRIME_AGENT_ADDRESS")
 RESPONDENT_AGENT_ADDRESS = os.getenv("RESPONDENT_AGENT_ADDRESS")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 VISUALIZATION_AGENT_ADDRESS = os.getenv("VISUALIZATION_AGENT_ADDRESS")
@@ -44,7 +44,29 @@ async def determine_tool_need(request: str, response: str) -> str:
         completion = client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are an AI assistant that decides whether visualization is needed. Respond in this format only:\n\n'NO TOOL' (if no visualization is needed)\n\nOR\n\n'TOOL , tools is visualization' (if visualization is needed)."},
+                {"role": "system", "content": """You are an AI assistant that determines whether a visualization (e.g., a chart, diagram, graph, or image) is needed to help the student understand the response better.
+
+                Follow these rules when making a decision:
+                1. If the response explains concepts, definitions, or theoretical material without any need for visual aid — respond with:
+                NO TOOL
+
+                2. If the request involves data, trends, comparisons, processes, categories, diagrams, timelines, charts, or anything that would *clearly benefit* from a visual representation — respond with:
+                TOOL , tools is visualization
+
+                Only return **one** of the two responses above exactly — no extra words or punctuation.
+
+                Examples of when to say TOOL:
+                - "Can you show me the architecture of this system?"
+                - "Create a pie chart of time spent per topic."
+                - "Compare CPU and memory usage."
+
+                Examples of when to say NO TOOL:
+                - "What is polymorphism in OOP?"
+                - "Explain the difference between HTTP and HTTPS."
+                - "What are the advantages of unit testing?"
+
+                Do not try to explain your decision — just output the label.
+                """},
                 {"role": "user", "content": f"Request: {request}\nResponse: {response}\nDo we need visualization?"}
             ]
         )
@@ -54,11 +76,16 @@ async def determine_tool_need(request: str, response: str) -> str:
     except Exception as e:
         print(f"Error determining tool need: {e}")
         return "NO TOOL"
+    
+
 
 @respondent_protocol.on_message(model=RequestResponse)
 async def handle_response(ctx: Context, sender: str, msg: RequestResponse):
     """Handle incoming responses from the analyzer agent."""
     ctx.logger.info(f"Received response from {sender}")
+    ctx.storage.set("last_response", msg.response)
+    ctx.storage.set("last_request", msg.request)
+
     
     try:
         # Check if visualization is needed
@@ -83,10 +110,10 @@ async def handle_response(ctx: Context, sender: str, msg: RequestResponse):
             # ctx.logger.info(f"Sent visualization request for {len(numbers)} numbers")
         else:
             ctx.logger.info("No visualization needed")
-            await ctx.send(USER_AGENT_ADDRESS, RequestResponse(
+            await ctx.send(PRIME_AGENT_ADDRESS, RequestResponse(
             request=msg.request, 
             response=msg.response
-        ))
+            ))
         
         
     except Exception as e:
@@ -95,15 +122,18 @@ async def handle_response(ctx: Context, sender: str, msg: RequestResponse):
 @respondent_agent.on_message(model=ToolResponse)
 async def handle_visualization_response(ctx: Context, sender: str, response: ToolResponse):
     """Handle visualization responses from tool agents."""
-    ctx.logger.info(f"Received visualization response from  visualization agent")
+    ctx.logger.info(f"Received visualization response from visualization agent")
+    ctx.logger.info(f"Full response: {response}")
+    ctx.logger.info(f"Result value: {response.result}")
+    ctx.logger.info(f"Result type: {type(response.result)}")
+    ctx.logger.info(f"Is result truthy? {bool(response.result)}")
 
-    img_data = base64.b64decode(response.result)
-    with open("visualization_output.png", "wb") as f:
-        f.write(img_data)
+   
+    await ctx.send(PRIME_AGENT_ADDRESS, RequestResponse(
+        request=ctx.storage.get("last_request"),
+        response=str(response.result)
+    ))
 
-    ctx.logger.info("Saved visualization image as visualization_output.png")
-
-    await ctx.send(USER_AGENT_ADDRESS, RequestResponse(request="filler", response=response.result))
 
 respondent_agent.include(respondent_protocol)
 
