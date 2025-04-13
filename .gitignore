@@ -13,4 +13,5 @@
 /knowledgebase/__pycache__/
 /knowledgebase/faiss_db/
 /knowledgebase/course_files/
+/knowledgebase/credentials.txt
 

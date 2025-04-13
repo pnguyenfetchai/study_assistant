@@ -1,17 +1,27 @@
 from dotenv import load_dotenv
 import requests
 import os
-from uagents import Agent, Context, Protocol, Model
-
+import json
 
 load_dotenv()
 
-BASE_URL = "https://sjsu.instructure.com/api/v1"
-CANVAS_TOKEN = os.getenv("CANVAS_TOKEN")
+def get_credentials():
+    try:
+        with open("credentials.txt", "r") as f:
+            creds = json.load(f)
+            return creds["school"], creds["token"]
+    except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
+        print(f"Error reading credentials: {e}")
+        return None, None
 
+school, token = get_credentials()
+BASE_URL = f"https://{school}.instructure.com/api/v1" if school else ""
+CANVAS_TOKEN = token
 
 
 def get_headers():
+    if not CANVAS_TOKEN:
+        raise ValueError("Canvas token not found in credentials.txt")
     return {
         "Authorization": f"Bearer {CANVAS_TOKEN}"
     }

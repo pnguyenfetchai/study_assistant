@@ -17,6 +17,7 @@ import Link from "next/link"
 export default function CanvasSetup() {
   const [darkMode, setDarkMode] = useState(false)
   const [canvasToken, setCanvasToken] = useState("")
+  const [schoolAcronym, setSchoolAcronym] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const { toast } = useToast()
@@ -25,15 +26,20 @@ export default function CanvasSetup() {
   const toggleDarkMode = () => setDarkMode(!darkMode)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCanvasToken(e.target.value)
+    const { name, value } = e.target
+    if (name === 'token') {
+      setCanvasToken(value)
+    } else if (name === 'school') {
+      setSchoolAcronym(value.toLowerCase())
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (!canvasToken.trim()) {
+    if (!canvasToken.trim() || !schoolAcronym.trim()) {
       toast({
         title: "Error",
-        description: "Please enter a valid Canvas token",
+        description: "Please enter both Canvas token and institution URL",
         variant: "destructive",
       })
       return
@@ -43,8 +49,9 @@ export default function CanvasSetup() {
 
     try {
       // Replace with your actual backend endpoint
-      const response = await axios.post("http://0.0.0.0:8081/canvas-token", {
+      const response = await axios.post("http://localhost:8000/api/canvas-token", {
         token: canvasToken,
+        school: schoolAcronym,
       })
 
       console.log("Token submission response:", response)
@@ -55,9 +62,10 @@ export default function CanvasSetup() {
         description: "Canvas token has been saved successfully",
       })
 
-      // Clear the input after successful submission
+      // Clear the inputs after successful submission
       setCanvasToken("")
-      router.push("/dashboard")
+      setSchoolAcronym("")
+      router.push("/dash")
 
     } catch (error) {
       console.error("Error submitting Canvas token:", error)
@@ -99,39 +107,57 @@ export default function CanvasSetup() {
             <CardContent className="pt-6">
               <div className="space-y-4">
                 <p className="text-muted-foreground">
-                  Enter your Canvas API token to connect your Canvas account with the Educational Assistant.
+                  Enter your Canvas API token and institution URL to get started. This will allow us to fetch your course materials.
                 </p>
-
-                {isSuccess && (
-                  <div className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 p-3 rounded-md">
-                    Canvas token has been saved successfully. You can now use the Educational Assistant with Canvas
-                    integration.
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="school" className="block text-sm font-medium mb-2">School Acronym</label>
+                      <Input
+                        id="school"
+                        name="school"
+                        type="text"
+                        placeholder="e.g., sjsu, berkeley, stanford"
+                        value={schoolAcronym}
+                        onChange={handleInputChange}
+                        className="w-full"
+                        disabled={isSubmitting}
+                        maxLength={10}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Enter your school's common acronym (e.g., SJSU for San Jose State University)
+                      </p>
+                    </div>
+                    <div>
+                      <label htmlFor="token" className="block text-sm font-medium mb-2">Canvas API Token</label>
+                      <Input
+                        id="token"
+                        name="token"
+                        type="password"
+                        placeholder="Enter your Canvas API token"
+                        value={canvasToken}
+                        onChange={handleInputChange}
+                        className="w-full"
+                        disabled={isSubmitting}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        You can generate an API token in your Canvas account settings.
+                      </p>
+                    </div>
                   </div>
-                )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <label htmlFor="canvas-token" className="text-sm font-medium">
-                      Canvas API Token
-                    </label>
-                    <Input
-                      id="canvas-token"
-                      type="password"
-                      value={canvasToken}
-                      onChange={handleInputChange}
-                      placeholder="Enter your Canvas API token"
-                      className="w-full"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      You can generate an API token in your Canvas account settings.
-                    </p>
-                  </div>
+                  {isSuccess && (
+                    <div className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 p-3 rounded-md">
+                      Canvas token has been saved successfully. You can now use the Educational Assistant with Canvas
+                      integration.
+                    </div>
+                  )}
 
-                  <Button type="submit" className="w-full" disabled={isSubmitting || !canvasToken.trim()}>
+                  <Button type="submit" className="w-full" disabled={isSubmitting || !canvasToken.trim() || !schoolAcronym.trim()}>
                     {isSubmitting ? (
                       <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
                     ) : (
-                      "Save Canvas Token"
+                      "Connect Canvas"
                     )}
                   </Button>
                 </form>
