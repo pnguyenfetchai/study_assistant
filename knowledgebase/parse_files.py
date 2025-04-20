@@ -30,13 +30,17 @@ def extract_text_from_txt(txt_path):
 
 def extract_text_from_pptx(pptx_path):
     """Extract text from a PowerPoint (.pptx) file."""
-    presentation = Presentation(pptx_path)
-    text = []
-    for slide in presentation.slides:
-        for shape in slide.shapes:
-            if hasattr(shape, "text"):
-                text.append(shape.text)
-    return "\n".join(text)
+    try:
+        presentation = Presentation(pptx_path)
+        text = []
+        for slide in presentation.slides:
+            for shape in slide.shapes:
+                if hasattr(shape, "text"):
+                    text.append(shape.text)
+        return "\n".join(text)
+    except Exception as e:
+        print(f"Warning: Could not extract text from {pptx_path}: {str(e)}")
+        return ""
 
 def extract_text_from_images(image_path):
     """Extract text from an image using Tesseract OCR."""
@@ -56,34 +60,42 @@ def extract_text_from_excel(excel_path):
 
 def extract_text_from_files(directory):
     """Extract text from all supported file types in a directory."""
-    docs = []
+    if not os.path.exists(directory):
+        print(f"Warning: Directory {directory} does not exist")
+        return []
+        
+    all_texts = []
     for root, _, files in os.walk(directory):
         for file in files:
             file_path = os.path.join(root, file)
-            text = None  # Initialize empty text content
-            
-            if file.endswith(".pdf"):
-                text = extract_text_from_pdf(file_path)
-            elif file.endswith(".docx"):
-                text = extract_text_from_docx(file_path)
-            elif file.endswith(".txt"):
-                text = extract_text_from_txt(file_path)
-            elif file.endswith(".pptx"):
-                text = extract_text_from_pptx(file_path)
-            elif file.endswith((".png", ".jpg", ".jpeg")):
-                text = extract_text_from_images(file_path)
-            elif file.endswith((".xlsx", ".xls")):
-                text = extract_text_from_excel(file_path)
-            else:
-                continue  # Skip unsupported files
-            
-            if text:  
-                relative_path = os.path.relpath(file_path, directory)
-                course_folder = relative_path.split(os.sep)[0]
-                docs.append(f"Course: {course_folder}, File: {file}, Content: {text}")
+            file_extension = os.path.splitext(file)[1].lower()
+            text = ""
 
-    print("dep trai qua di: ", docs)
-    return docs
+            try:
+                if file_extension == ".pdf":
+                    text = extract_text_from_pdf(file_path)
+                elif file_extension == ".docx":
+                    text = extract_text_from_docx(file_path)
+                elif file_extension == ".txt":
+                    text = extract_text_from_txt(file_path)
+                elif file_extension == ".pptx":
+                    text = extract_text_from_pptx(file_path)
+                elif file_extension in [".png", ".jpg", ".jpeg"]:
+                    text = extract_text_from_images(file_path)
+                elif file_extension in [".xlsx", ".xls"]:
+                    text = extract_text_from_excel(file_path)
+
+                if text and text.strip():  # Only add non-empty texts
+                    all_texts.append(text)
+
+            except Exception as e:
+                print(f"Error processing {file}: {str(e)}")
+                continue
+
+    if not all_texts:
+        print(f"Warning: No text could be extracted from any files in {directory}")
+        
+    return all_texts
 
 if __name__ == "__main__":
     docs = extract_text_from_files("course_files")

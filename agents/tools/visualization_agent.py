@@ -25,7 +25,8 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 visualization_agent = Agent(
     name="visualization_agent",
     port=8009,
-    endpoint=["http://127.0.0.1:8009/submit"]
+    endpoint=["http://127.0.0.1:8009/submit"], 
+    mailbox=True
 )
 
 visualization_protocol = Protocol("visualization")

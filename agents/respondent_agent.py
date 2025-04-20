@@ -1,4 +1,4 @@
-from uagents import Agent, Context, Protocol, Model
+from uagents import Agent, Context, Model
 from typing import Dict, List, Any
 import matplotlib.pyplot as plt
 from io import BytesIO
@@ -8,19 +8,17 @@ import os
 from openai import OpenAI
 import re
 import asyncio
+from query_protocol import query_protocol, QueryRequest, RequestResponse
 
 load_dotenv()
 
-PRIME_AGENT_ADDRESS = os.getenv("PRIME_AGENT_ADDRESS")
+CANVAS_AGENT_ADDRESS = os.getenv("CANVAS_AGENT_ADDRESS")
 RESPONDENT_AGENT_ADDRESS = os.getenv("RESPONDENT_AGENT_ADDRESS")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 VISUALIZATION_AGENT_ADDRESS = os.getenv("VISUALIZATION_AGENT_ADDRESS")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-class RequestResponse(Model):
-    request: str
-    response: str
 
 class ToolRequest(Model):
     params: Dict[str, Any]
@@ -33,10 +31,10 @@ class ToolResponse(Model):
 respondent_agent = Agent(
     name="respondent_agent",
     port=8007,
-    endpoint=["http://127.0.0.1:8007/submit"]
+    endpoint=["http://127.0.0.1:8007/submit"], 
+    mailbox=True
 )
 
-respondent_protocol = Protocol("response_analysis")
 
 async def determine_tool_need(request: str, response: str) -> str:
     """Uses OpenAI to decide if visualization is needed."""
@@ -64,7 +62,7 @@ async def determine_tool_need(request: str, response: str) -> str:
                 - "What is polymorphism in OOP?"
                 - "Explain the difference between HTTP and HTTPS."
                 - "What are the advantages of unit testing?"
-
+                - "What are my upcoming assignments and their deadline?"
                 Do not try to explain your decision — just output the label.
                 """},
                 {"role": "user", "content": f"Request: {request}\nResponse: {response}\nDo we need visualization?"}
@@ -79,7 +77,7 @@ async def determine_tool_need(request: str, response: str) -> str:
     
 
 
-@respondent_protocol.on_message(model=RequestResponse)
+@query_protocol.on_message(model=RequestResponse)
 async def handle_response(ctx: Context, sender: str, msg: RequestResponse):
     """Handle incoming responses from the analyzer agent."""
     ctx.logger.info(f"Received response from {sender}")
@@ -91,7 +89,7 @@ async def handle_response(ctx: Context, sender: str, msg: RequestResponse):
         # Check if visualization is needed
         decision = await determine_tool_need(msg.request, msg.response)
         decision = decision.strip().strip("'").strip('"')
-        
+        ctx.logger.info(f"Tool decision: {decision}")
         
         if decision.startswith("TOOL"):
             # Extract numbers from response for visualization
@@ -99,18 +97,22 @@ async def handle_response(ctx: Context, sender: str, msg: RequestResponse):
             
             # Send visualization request
 
-            ctx.logger.info("radindra", type(msg.response))
+            ctx.logger.info(f"Response type: {type(msg.response)}")
+            ctx.logger.info(f"Response content: {msg.response}")
 
-            # for now just use pie chart tool anyway when tool is needed
-            # will create more tool in the future by ultilizing dictiontionary instead of title and data
-            await ctx.send(VISUALIZATION_AGENT_ADDRESS, ToolRequest(
-                params={'data': msg.response, 'title': 'Generated Visualization'}
-            ))
+            if msg.response:
+                # for now just use pie chart tool anyway when tool is needed
+                # will create more tool in the future by ultilizing dictiontionary instead of title and data
+                await ctx.send(VISUALIZATION_AGENT_ADDRESS, ToolRequest(
+                    params={'data': msg.response, 'title': 'Generated Visualization'}
+                ))
+            else:
+                ctx.logger.warning("Received empty response, skipping visualization")
             
             # ctx.logger.info(f"Sent visualization request for {len(numbers)} numbers")
         else:
             ctx.logger.info("No visualization needed")
-            await ctx.send(PRIME_AGENT_ADDRESS, RequestResponse(
+            await ctx.send(CANVAS_AGENT_ADDRESS, RequestResponse(
             request=msg.request, 
             response=msg.response
             ))
@@ -128,14 +130,19 @@ async def handle_visualization_response(ctx: Context, sender: str, response: Too
     ctx.logger.info(f"Result type: {type(response.result)}")
     ctx.logger.info(f"Is result truthy? {bool(response.result)}")
 
-   
-    await ctx.send(PRIME_AGENT_ADDRESS, RequestResponse(
-        request=ctx.storage.get("last_request"),
-        response=str(response.result)
-    ))
+    if response.result:
+        await ctx.send(CANVAS_AGENT_ADDRESS, RequestResponse(
+            request=ctx.storage.get("last_request"),
+            response=str(response.result)
+        ))
+    else:
+        await ctx.send(CANVAS_AGENT_ADDRESS, RequestResponse(
+            request=ctx.storage.get("last_request"),
+            response="unable to generate visualization"
+        ))
 
 
-respondent_agent.include(respondent_protocol)
+respondent_agent.include(query_protocol)
 
 if __name__ == "__main__":
     respondent_agent.run()

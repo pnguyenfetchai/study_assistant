@@ -1,32 +1,24 @@
-from uagents import Agent, Context, Protocol, Model
+from uagents import Agent, Context
 from dotenv import load_dotenv
 import os
 from openai import OpenAI
+from query_protocol import query_protocol, RequestResponse
+from problem_protocol import problem_protocol, QueryRequest
 
 load_dotenv()
 
 QUERY_AGENT_ADDRESS = os.getenv("QUERY_AGENT_ADDRESS")
-PRIME_AGENT_ADDRESS = os.getenv("PRIME_AGENT_ADDRESS")
+CANVAS_AGENT_ADDRESS = os.getenv("CANVAS_AGENT_ADDRESS")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ANALYZER_AGENT_ADDRESS = os.getenv("ANALYZER_AGENT_ADDRESS")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-
-class QueryRequest(Model):
-    query: str
-
-class RequestResponse(Model):
-    request: str
-    response: str
-
-problem_protocol = Protocol("Problem Solving")
-query_protocol = Protocol("Query Handling")
-
 problem_solver_agent = Agent(
     name="problem_solver_agent",
     port=8004,
     endpoint=["http://127.0.0.1:8004/submit"],
+    mailbox=True
 )
 
 
@@ -50,7 +42,7 @@ async def receive_query_response(ctx: Context, sender: str, requestresponse: Req
         model="gpt-4",
         messages=[
             {"role": "system", "content": "Solve the given problem using relevant course materials."},
-            {"role": "user", "content": f"Original Problem: {problem[PRIME_AGENT_ADDRESS]}\nContext: {requestresponse.response}"}
+            {"role": "user", "content": f"Original Problem: {problem[CANVAS_AGENT_ADDRESS]}\nContext: {requestresponse.response}"}
         ]
     )
     solution = problem_solution.choices[0].message.content

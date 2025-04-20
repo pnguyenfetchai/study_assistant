@@ -19,7 +19,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 embedding_model = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
 
 ANALYZER_AGENT = os.getenv("ANALYZER_AGENT_ADDRESS")
-PRIME_AGENT = os.getenv("PRIME_AGENT_ADDRESS")
+CANVAS_AGENT = os.getenv("CANVAS_AGENT_ADDRESS")
 
 class QueryRequest(Model):
     query: str
@@ -120,17 +120,25 @@ query_agent.include(problem_protocol)
 
 @query_agent.on_message(model=RequestResponse)
 async def query_rag_system(ctx: Context, sender: str, query: RequestResponse):
-    ctx.logger.info(f"Query Agent received query: {query.request}")
+    try:
+        ctx.logger.info(f"Query Agent received query: {query.request}")
 
-    retrieved_docs = retriever.invoke(query.request)
-    context = "\n".join([doc.page_content for doc in retrieved_docs])
+        retrieved_docs = retriever.invoke(query.request)
+        context = "\n".join([doc.page_content for doc in retrieved_docs])
 
-    response = retrieval_chain.invoke({"input": query.request, "context": context})
+        response = retrieval_chain.invoke({"input": query.request, "context": context})
+        answer = response.get('answer', '')
+        
+        ctx.logger.info(f"Generated response: {answer}")
 
-    if sender == PRIME_AGENT:
-        await ctx.send(ANALYZER_AGENT, RequestResponse(request=query.request,response=response['answer']))
-    else:
-        await ctx.send(sender, RequestResponse(request=query.request, response=response['answer']))
+        if sender == CANVAS_AGENT:
+            await ctx.send(ANALYZER_AGENT, RequestResponse(request=query.request, response=answer))
+        else:
+            await ctx.send(sender, RequestResponse(request=query.request, response=answer))
+    except Exception as e:
+        ctx.logger.error(f"Error in query_rag_system: {str(e)}")
+        # Send error response back
+        await ctx.send(sender, RequestResponse(request=query.request, response=f"Error: {str(e)}"))
 
 @query_agent.on_message(model=QueryRequest)
 async def handle_problem_solving(ctx: Context, sender: str, query: QueryRequest):
