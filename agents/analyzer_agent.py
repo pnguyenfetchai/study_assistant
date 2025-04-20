@@ -34,7 +34,29 @@ async def check_response(question: str, answer: str) -> bool:
         completion = client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are an AI assistant that verifies whether an answer correctly addresses a given question."},
+                {   "role": "system", 
+                    "content":"""
+                        You are an expert AI agent tasked with verifying the correctness and completeness of a response given a specific request. 
+
+                        ## Request:
+                        {question}
+
+                        ## Response:
+                        {answer}
+
+                        ### Evaluation Criteria:
+                        1. **Accuracy** – Does the response directly and factually answer the request?
+                        2. **Completeness*s* – Does the response address all components or sub-questions in the request?
+                        3. **Relevance** – Is the response on-topic and not containing unnecessary or unrelated information?
+                        4. **Consistency** – Is the information consistent and logically coherent?
+                        5. **Visualization Exception** - If the question is asking for a visualization, THE RESPONSE IS ALWAYS CORRECT!!!!! AND YOU MUST ANSWER 'yes'!
+
+                        Please return:
+                        - `yes` if the response is correct, complete, and appropriate.
+                        - `no` if the response is wrong, incomplete, misleading, or off-topic.
+                        ONLY AND DO NOT RESPONSE WITH ANYTHING ELSE
+                        """
+                },
                 {"role": "user", "content": f"Question: {question}\nAnswer: {answer}\nIs this answer correct? Respond with 'yes' or 'no' ONLY AND DO NOT RESPONSE WITH ANYTHING ELSE."}
             ]
         )

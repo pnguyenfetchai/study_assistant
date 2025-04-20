@@ -5,6 +5,7 @@ from openai import OpenAI
 from chat_protocol import chat_proto, create_text_chat
 from problem_protocol import problem_protocol
 from query_protocol import query_protocol, QueryRequest, RequestResponse
+from visualization_protocol import visualization_protocol, ImageResponse
 from uagents_core.contrib.protocols.chat import ChatMessage, TextContent, ChatAcknowledgement
 from datetime import datetime
 load_dotenv()
@@ -77,35 +78,62 @@ async def handle_chat_message(ctx: Context, sender: str, msg: ChatMessage):
 @query_protocol.on_message(RequestResponse)
 async def handle_response(ctx: Context, sender: str, msg: RequestResponse):
     ctx.logger.info(f"Received response from {sender}: {msg.response}")
-    # Get the original sender from storage
-    original_sender = ctx.storage.get("current_sender")
-    if original_sender:
-        # Convert RequestResponse back to ChatMessage for ASI-1
-        response_text = msg.response if msg.response else "No response available"
-        ctx.logger.info(f"Sending response to {original_sender}: {response_text}")
-        await ctx.send(
-            original_sender,
-            create_text_chat(response_text, end_session=True)
-        )
-    else:
+    
+    if sender == ANALYZER_AGENT_ADDRESS:
+        # Response from analyzer needs to be re-routed based on query type
         classification = classify_query_with_llm(msg.request)
         if classification == "general":
-            ctx.logger.info(f"Forwarding general query to Query Agent: {msg.request}")
+            ctx.logger.info(f"Re-routing to Query Agent: {msg.request}")
             await ctx.send(QUERY_AGENT_ADDRESS, msg)
         else:
-            ctx.logger.info(f"Forwarding problem-solving query to Problem Solver Agent: {msg.request}")
+            ctx.logger.info(f"Re-routing to Problem Solver Agent: {msg.request}")
             await ctx.send(PROBLEM_SOLVER_AGENT_ADDRESS, QueryRequest(query=msg.request))
+    else:
+        # This is a response from other agents (query/problem/respondent), send to user
+        await send_response_to_user(ctx, msg.response)
 
-        
+async def send_response_to_user(ctx: Context, response_text: str):
+    """Helper function to send final response to user"""
+    original_sender = ctx.storage.get("current_sender")
+    if original_sender:
+        ctx.logger.info(f"Sending final response to {original_sender}")
+        try:
+            await ctx.send(
+                original_sender,
+                create_text_chat(response_text, end_session=True)
+            )
+        except Exception as e:
+            ctx.logger.error(f"Failed to send response to {original_sender}: {e}")
+            # Here you could implement a fallback mechanism if needed
+    else:
+        ctx.logger.warning("No original sender found for response")
 
-        
-
-
-
+@visualization_protocol.on_message(model=ImageResponse)
+async def handle_image_response(ctx: Context, sender: str, msg: ImageResponse):
+    """Handle image responses from visualization agent"""
+    ctx.logger.info(f"Received visualization from {sender}")
+    original_sender = ctx.storage.get("current_sender")
+    if original_sender:
+        ctx.logger.info(f"Sending visualization to {original_sender}")
+        # Create a message with image data in a structured format
+        response = {
+            "type": "image",
+            "content": {
+                "data": msg.image_data,
+                "content_type": msg.content_type
+            }
+        }
+        await ctx.send(
+            original_sender,
+            create_text_chat(str(response), end_session=True)
+        )
+    else:
+        ctx.logger.warning("No original sender found for visualization response")
 
 canvas_agent.include(chat_proto, publish_manifest=True)
 canvas_agent.include(problem_protocol)
 canvas_agent.include(query_protocol)
+canvas_agent.include(visualization_protocol)
 
 if __name__ == "__main__":
     canvas_agent.run()

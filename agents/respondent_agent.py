@@ -9,6 +9,7 @@ from openai import OpenAI
 import re
 import asyncio
 from query_protocol import query_protocol, QueryRequest, RequestResponse
+from visualization_protocol import visualization_protocol, ImageResponse
 
 load_dotenv()
 
@@ -125,15 +126,14 @@ async def handle_response(ctx: Context, sender: str, msg: RequestResponse):
 async def handle_visualization_response(ctx: Context, sender: str, response: ToolResponse):
     """Handle visualization responses from tool agents."""
     ctx.logger.info(f"Received visualization response from visualization agent")
-    ctx.logger.info(f"Full response: {response}")
-    ctx.logger.info(f"Result value: {response.result}")
-    ctx.logger.info(f"Result type: {type(response.result)}")
-    ctx.logger.info(f"Is result truthy? {bool(response.result)}")
-
+    
     if response.result:
-        await ctx.send(CANVAS_AGENT_ADDRESS, RequestResponse(
+        # The response.result contains base64 encoded PNG image
+        await ctx.send(CANVAS_AGENT_ADDRESS, ImageResponse(
             request=ctx.storage.get("last_request"),
-            response=str(response.result)
+            image_data=response.result,
+            image_type='png',
+            content_type='image/png'
         ))
     else:
         await ctx.send(CANVAS_AGENT_ADDRESS, RequestResponse(
@@ -143,6 +143,7 @@ async def handle_visualization_response(ctx: Context, sender: str, response: Too
 
 
 respondent_agent.include(query_protocol)
+respondent_agent.include(visualization_protocol)
 
 if __name__ == "__main__":
     respondent_agent.run()
