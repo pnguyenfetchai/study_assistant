@@ -1,30 +1,38 @@
-from dotenv import load_dotenv
-import requests
 import os
-import json
+import requests
+from dotenv import load_dotenv
+from parse_files import extract_text_from_files
 
 load_dotenv()
 
-def get_credentials():
-    try:
-        with open("credentials.txt", "r") as f:
-            creds = json.load(f)
-            return creds["school"], creds["token"]
-    except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
-        print(f"Error reading credentials: {e}")
-        return None, None
-
-school, token = get_credentials()
-BASE_URL = f"https://{school}.instructure.com/api/v1" if school else ""
-CANVAS_TOKEN = token
-
-
-def get_headers():
-    if not CANVAS_TOKEN:
-        raise ValueError("Canvas token not found in credentials.txt")
+def get_headers(canvas_token: str) -> dict:
+    """Get headers for Canvas API requests"""
+    if not canvas_token:
+        raise ValueError("Canvas token not provided")
     return {
-        "Authorization": f"Bearer {CANVAS_TOKEN}"
+        "Authorization": f"Bearer {canvas_token}"
     }
+
+def get_all_available_canvas_courses(canvas_token: str, school_domain: str) -> list:
+    try:
+        response = requests.get(f"https://{school_domain}.instructure.com/api/v1/courses?enrollment_state=active", headers=get_headers(canvas_token))
+        response.raise_for_status()  
+
+        response_json = response.json()
+        if not response_json:
+            print("⚠️ No courses returned from API.")
+            return []
+
+        cleaned_up_response = []
+        for course in response_json:
+            cleaned_up_response.append(course)
+
+
+        return cleaned_up_response
+
+    except requests.exceptions.HTTPError as e:
+        print(f" API error while getting courses: {e}")
+        return []
 
 def paginate(url):
     results = []
@@ -41,11 +49,12 @@ def paginate(url):
         url = response.links.get('next', {}).get('url', None)
 
     return results
+    
 
 
-
-def get_all_course_materials():
-    courses = get_all_available_canvas_courses()
+def get_all_course_materials(canvas_token: str, school_domain: str) -> dict:
+    """Get all course materials from Canvas using provided credentials"""
+    courses = get_all_available_canvas_courses(canvas_token, school_domain)
     all_materials = {}
 
     for course in courses:
@@ -59,22 +68,22 @@ def get_all_course_materials():
         os.makedirs(course_folder, exist_ok=True)
 
         # === Assignments ===
-        course_assignments = get_canvas_assignments(course_id)
+        course_assignments = get_canvas_assignments(canvas_token, school_domain, course_id)
         assignments = []
 
         for assignment in course_assignments:
             assignment_id = assignment["id"]
-            assignment_info = get_canvas_assignment_info(course_id, assignment_id)
+            assignment_info = get_canvas_assignment_info(canvas_token, school_domain, course_id, assignment_id)
             if isinstance(assignment_info, dict):
                 assignments.append(assignment_info)
             else:
                 print("⚠️ Invalid assignment info:", assignment_info)
 
         # === Files ===
-        files_url = f"{BASE_URL}/courses/{course_id}/files"
+        files_url = f"https://{school_domain}.instructure.com/api/v1/courses/{course_id}/files"
         try:
             while files_url:
-                response = requests.get(files_url, headers=get_headers())
+                response = requests.get(files_url, headers=get_headers(canvas_token))
                 response.raise_for_status()
                 data = response.json()
 
@@ -112,35 +121,9 @@ def get_all_course_materials():
     return all_materials
 
 
-
-
-def get_all_available_canvas_courses():
+def get_canvas_assignments(canvas_token: str, school_domain: str, course_id: int):
     try:
-        response = requests.get(f"{BASE_URL}/courses?enrollment_state=active", headers=get_headers())
-        response.raise_for_status()  
-
-        response_json = response.json()
-        if not response_json:
-            print("⚠️ No courses returned from API.")
-            return []
-
-        cleaned_up_response = []
-        for course in response_json:
-            cleaned_up_response.append(course)
-
-
-
-        return cleaned_up_response
-
-    except requests.exceptions.HTTPError as e:
-        print(f" API error while getting courses: {e}")
-        return []
-
-
-
-def get_canvas_assignments(course_id: int):
-    try:
-        response = requests.get(f"{BASE_URL}/courses/{course_id}/assignments", headers=get_headers())
+        response = requests.get(f"https://{school_domain}.instructure.com/api/v1/courses/{course_id}/assignments", headers=get_headers(canvas_token))
         response_json = response.json()
 
         print("yahoo", response_json)
@@ -151,10 +134,9 @@ def get_canvas_assignments(course_id: int):
         return []
 
 
-
-def get_canvas_assignment_info(course_id: str, assignment_id: str):
+def get_canvas_assignment_info(canvas_token: str, school_domain: str, course_id: str, assignment_id: str):
     try:
-        response = requests.get(f"{BASE_URL}/courses/{course_id}/assignments/{assignment_id}", headers=get_headers())
+        response = requests.get(f"https://{school_domain}.instructure.com/api/v1/courses/{course_id}/assignments/{assignment_id}", headers=get_headers(canvas_token))
         response.raise_for_status()  # Ensure we handle failed API calls
         response_json = response.json()
 
@@ -170,3 +152,6 @@ def get_canvas_assignment_info(course_id: str, assignment_id: str):
     except KeyError as e:
         print(f"⚠️ Missing Key in API Response: {e}")
         return {}
+
+
+
