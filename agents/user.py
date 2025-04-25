@@ -6,7 +6,8 @@ from fastapi import HTTPException
 
 load_dotenv()
 
-CANVAS_AGENT_ADDRESS = os.getenv("CANVAS_AGENT_ADDRESS")
+# Agent addresses
+CANVAS_AGENT_ADDRESS = "agent1q0uvz4t5tv8dcahzwgks4pymps98ua9m2rnpfguxrzk55zv0xg2p2ye834v"
 
 class QueryRequest(Model):
     query: str

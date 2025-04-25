@@ -7,9 +7,10 @@ from query_protocol import query_protocol, QueryRequest, RequestResponse
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-CANVAS_AGENT_ADDRESS = os.getenv("CANVAS_AGENT_ADDRESS")
-RESPONDENT_AGENT_ADDRESS = os.getenv("RESPONDENT_AGENT_ADDRESS")
-USER_AGENT_ADDRESS = os.getenv("USER_AGENT_ADDRESS")
+
+# Agent addresses
+CANVAS_AGENT_ADDRESS = "agent1q0uvz4t5tv8dcahzwgks4pymps98ua9m2rnpfguxrzk55zv0xg2p2ye834v"
+RESPONDENT_AGENT_ADDRESS = "agent1qwh55uf7y5k0lv4w2vf5d2emu5gu7sf8mk9uwlmgfqpyf6k5unjywyd028w"
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 

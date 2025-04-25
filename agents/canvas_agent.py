@@ -10,11 +10,13 @@ from uagents_core.contrib.protocols.chat import ChatMessage, TextContent, ChatAc
 from datetime import datetime
 load_dotenv()
 
-QUERY_AGENT_ADDRESS = os.getenv("QUERY_AGENT_ADDRESS")
-PROBLEM_SOLVER_AGENT_ADDRESS = os.getenv("PROBLEM_SOLVER_AGENT_ADDRESS")
-USER_AGENT_ADDRESS = os.getenv("USER_AGENT_ADDRESS")
-ANALYZER_AGENT_ADDRESS = os.getenv("ANALYZER_AGENT_ADDRESS")
-# Load environment variables
+# Agent addresses
+QUERY_AGENT_ADDRESS = "agent1qvejzzpsu5zxqhm6elej0a9g680ayadg7a4hnsvw20qf3kqhtqrhg3qjwq6"
+PROBLEM_SOLVER_AGENT_ADDRESS = "agent1qwhyave0udt0ggg66f64cdmyx85nuwad8hqcgtwyymgc89d0yljsspxakus"
+ANALYZER_AGENT_ADDRESS = "agent1qdkma7e770uq64u8zkcyvcum2sgzz6k5vj3xf5mt97wd63fpp9w6zedrr7z"
+CANVAS_AGENT_ADDRESS = "agent1q0uvz4t5tv8dcahzwgks4pymps98ua9m2rnpfguxrzk55zv0xg2p2ye834v"
+
+# Load environment variables for OpenAI key
 load_dotenv()
 
 # Get OpenAI API key

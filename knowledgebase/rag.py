@@ -27,8 +27,9 @@ if not OPENAI_API_KEY:
 # Initialize embedding model
 embedding_model = OpenAIEmbeddings(api_key=OPENAI_API_KEY)
 
-ANALYZER_AGENT = os.getenv("ANALYZER_AGENT_ADDRESS")
-CANVAS_AGENT = os.getenv("CANVAS_AGENT_ADDRESS")
+# Agent addresses
+ANALYZER_AGENT = "agent1qdkma7e770uq64u8zkcyvcum2sgzz6k5vj3xf5mt97wd63fpp9w6zedrr7z"
+CANVAS_AGENT = "agent1q0uvz4t5tv8dcahzwgks4pymps98ua9m2rnpfguxrzk55zv0xg2p2ye834v"
 
 class QueryRequest(Model):
     query: str

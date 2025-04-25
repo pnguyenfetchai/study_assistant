@@ -13,10 +13,12 @@ from visualization_protocol import visualization_protocol, ImageResponse
 
 load_dotenv()
 
-CANVAS_AGENT_ADDRESS = os.getenv("CANVAS_AGENT_ADDRESS")
-RESPONDENT_AGENT_ADDRESS = os.getenv("RESPONDENT_AGENT_ADDRESS")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-VISUALIZATION_AGENT_ADDRESS = os.getenv("VISUALIZATION_AGENT_ADDRESS")
+
+# Agent addresses
+CANVAS_AGENT_ADDRESS = "agent1q0uvz4t5tv8dcahzwgks4pymps98ua9m2rnpfguxrzk55zv0xg2p2ye834v"
+RESPONDENT_AGENT_ADDRESS = "agent1qwh55uf7y5k0lv4w2vf5d2emu5gu7sf8mk9uwlmgfqpyf6k5unjywyd028w"
+VISUALIZATION_AGENT_ADDRESS = "agent1q2c9r7n7rux70m8l8ww4ly9u5dncw8f0w6c7nqgkk04yfgu5uykq78hy9rw"
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
