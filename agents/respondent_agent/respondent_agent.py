@@ -8,6 +8,8 @@ import os
 from openai import OpenAI
 import re
 import asyncio
+import sys
+sys.path.append('..')
 from query_protocol import query_protocol, QueryRequest, RequestResponse
 from visualization_protocol import visualization_protocol, ImageResponse
 

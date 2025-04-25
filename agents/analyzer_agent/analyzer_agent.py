@@ -2,6 +2,8 @@ from uagents import Agent, Context
 from dotenv import load_dotenv
 import os
 from openai import OpenAI
+import sys
+sys.path.append('..')
 from query_protocol import query_protocol, QueryRequest, RequestResponse
 
 load_dotenv()

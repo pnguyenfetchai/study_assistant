@@ -2,6 +2,8 @@ from uagents import Agent, Context, Model
 from dotenv import load_dotenv
 import os
 from openai import OpenAI
+import sys
+sys.path.append('..')
 from chat_protocol import chat_proto, create_text_chat
 from problem_protocol import problem_protocol
 from query_protocol import query_protocol, QueryRequest, RequestResponse

@@ -5,7 +5,8 @@ from io import BytesIO
 import base64
 import os
 from openai import OpenAI
-import re
+import sys
+sys.path.append('..')
 from dotenv import load_dotenv
 import json
 
