@@ -1,10 +1,13 @@
-from uagents import Agent, Context
+from datetime import datetime
+from uuid import uuid4
+from uagents import Agent, Context, Protocol
 from dotenv import load_dotenv
 import os
 from openai import OpenAI
 import sys
 sys.path.append('..')
-from query_protocol import query_protocol, QueryRequest, RequestResponse
+from query_protocol import query_protocol, RequestResponse
+from uagents_core.contrib.protocols.chat import ChatMessage, TextContent, ChatAcknowledgement, chat_protocol_spec
 
 load_dotenv()
 
@@ -15,6 +18,7 @@ CANVAS_AGENT_ADDRESS = "agent1q0uvz4t5tv8dcahzwgks4pymps98ua9m2rnpfguxrzk55zv0xg
 RESPONDENT_AGENT_ADDRESS = "agent1qwh55uf7y5k0lv4w2vf5d2emu5gu7sf8mk9uwlmgfqpyf6k5unjywyd028w"
 
 client = OpenAI(api_key=OPENAI_API_KEY)
+chat_proto = Protocol(spec=chat_protocol_spec)
 
 @query_protocol.on_message(model=RequestResponse)
 async def analyze_query(ctx: Context, sender: str, msg: RequestResponse):
@@ -30,6 +34,58 @@ async def analyze_query(ctx: Context, sender: str, msg: RequestResponse):
     else:
         ctx.logger.info("Response is incorrect. Forwarding to canvas agent for reevaluation.")
         await ctx.send(CANVAS_AGENT_ADDRESS, RequestResponse(request=msg.request, response=msg.response))
+
+@chat_proto.on_message(ChatMessage)
+async def handle_chat_message(ctx: Context, sender: str, msg: ChatMessage):
+    try:
+        # Send acknowledgment first
+        await ctx.send(
+            sender,
+            ChatAcknowledgement(timestamp=datetime.now(), acknowledged_msg_id=msg.msg_id)
+        )
+
+        # Extract text content from the message
+        text_content = next((content.text for content in msg.content if isinstance(content, TextContent)), None)
+        if not text_content:
+            error_msg = "No text content found in the message"
+            ctx.logger.error(error_msg)
+            await ctx.send(sender, ChatMessage(
+                content=[TextContent(type="text", text=error_msg)],
+                timestamp=datetime.now(),
+                msg_id=uuid4()
+            ))
+            return
+
+        ctx.logger.info(f"Received direct chat message from {sender}: {text_content}")
+
+        # Use GPT-4 to verify the statement
+        completion = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a fact-checker. Verify if the given statement is correct. Respond with a clear explanation of why it's correct or incorrect."
+                },
+                {"role": "user", "content": text_content}
+            ]
+        )
+        analysis = completion.choices[0].message.content
+
+        # Send the analysis back
+        await ctx.send(sender, ChatMessage(
+            content=[TextContent(type="text", text=analysis)],
+            timestamp=datetime.now(),
+            msg_id=uuid4()
+        ))
+
+    except Exception as e:
+        error_msg = f"Error analyzing statement: {str(e)}"
+        ctx.logger.error(error_msg)
+        await ctx.send(sender, ChatMessage(
+            content=[TextContent(type="text", text=error_msg)],
+            timestamp=datetime.now(),
+            msg_id=uuid4()
+        ))
 
 async def check_response(question: str, answer: str) -> bool:
     """Uses OpenAI to evaluate whether the response is correct."""
@@ -75,11 +131,12 @@ async def check_response(question: str, answer: str) -> bool:
 analyzer_agent = Agent(
     name="analyzer_agent",
     port=8006,
+    seed="analyzer agent secret phrase",
     mailbox=True
 )
 
-# Attach the protocol separately
 analyzer_agent.include(query_protocol)
+analyzer_agent.include(chat_proto)
 
 if __name__ == "__main__":
     analyzer_agent.run()

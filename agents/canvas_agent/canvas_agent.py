@@ -13,9 +13,9 @@ from datetime import datetime
 load_dotenv()
 
 # Agent addresses
-QUERY_AGENT_ADDRESS = "agent1qvejzzpsu5zxqhm6elej0a9g680ayadg7a4hnsvw20qf3kqhtqrhg3qjwq6"
-PROBLEM_SOLVER_AGENT_ADDRESS = "agent1qwhyave0udt0ggg66f64cdmyx85nuwad8hqcgtwyymgc89d0yljsspxakus"
-ANALYZER_AGENT_ADDRESS = "agent1qdkma7e770uq64u8zkcyvcum2sgzz6k5vj3xf5mt97wd63fpp9w6zedrr7z"
+QUERY_AGENT_ADDRESS = "agent1qta523twlmzwxw8kcl98sv3kk67qeg8c0k9x7whdktsa3tw6paa8yyez7wv"
+PROBLEM_SOLVER_AGENT_ADDRESS = "agent1q0mnupyyzwgamal0jq40ke0z9vdqnfy39vahqhqm6j3g2ueyk6aajmj0vsz"
+ANALYZER_AGENT_ADDRESS = "agent1qdsp54ynk7gaeyn9h04dzjm9ndxhg9nlgjls8a49e9jxdhk2tap8wg78mf8"
 CANVAS_AGENT_ADDRESS = "agent1q0uvz4t5tv8dcahzwgks4pymps98ua9m2rnpfguxrzk55zv0xg2p2ye834v"
 
 # Load environment variables for OpenAI key

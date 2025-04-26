@@ -1,16 +1,48 @@
+import os
+import sys
+import faiss
+from dotenv import load_dotenv
+
+# Add parent directories to Python path for imports
+sys.path.append('../..')
+sys.path.append('../../agents')
+
+# Import agent-related modules
+from uagents import Agent, Context, Protocol, Model
+from datetime import datetime
+from uuid import uuid4
+from uagents_core.contrib.protocols.chat import (
+    ChatAcknowledgement,
+    ChatMessage,
+    EndSessionContent,
+    StartSessionContent,
+    TextContent,
+    chat_protocol_spec
+)
+
+# Create chat protocol
+def create_text_chat(text: str, end_session: bool = True) -> ChatMessage:
+    content = [TextContent(type="text", text=text)]
+    if end_session:
+        content.append(EndSessionContent(type="end-session"))
+    return ChatMessage(
+        timestamp=datetime.now(),
+        msg_id=uuid4(),
+        content=content
+    )
+
+chat_proto = Protocol(spec=chat_protocol_spec)
+# Import LangChain modules
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from uagents import Agent, Context, Protocol, Model
 from langchain_community.docstore.in_memory import InMemoryDocstore
+
+# Import local modules
 from canvas import get_all_course_materials
-import os
-import faiss
-from dotenv import load_dotenv
 from parse_files import extract_text_from_files
 
 
@@ -28,7 +60,7 @@ if not OPENAI_API_KEY:
 embedding_model = OpenAIEmbeddings(api_key=OPENAI_API_KEY)
 
 # Agent addresses
-ANALYZER_AGENT = "agent1qdkma7e770uq64u8zkcyvcum2sgzz6k5vj3xf5mt97wd63fpp9w6zedrr7z"
+ANALYZER_AGENT = "agent1qdsp54ynk7gaeyn9h04dzjm9ndxhg9nlgjls8a49e9jxdhk2tap8wg78mf8"
 CANVAS_AGENT = "agent1q0uvz4t5tv8dcahzwgks4pymps98ua9m2rnpfguxrzk55zv0xg2p2ye834v"
 
 class QueryRequest(Model):
@@ -195,7 +227,76 @@ def initialize_rag_system(canvas_token: str, school_domain: str) -> bool:
         print(f"Error initializing RAG system: {str(e)}")
         raise
 
+@chat_proto.on_message(ChatMessage)
+async def handle_message(ctx: Context, sender: str, msg: ChatMessage):
+    try:
+        # Always send acknowledgment first
+        await ctx.send(
+            sender,
+            ChatAcknowledgement(timestamp=datetime.now(), acknowledged_msg_id=msg.msg_id),
+        )
+
+        for item in msg.content:
+            if isinstance(item, StartSessionContent):
+                ctx.logger.info(f"Got a start session message from {sender}")
+                continue
+            elif isinstance(item, TextContent):
+                ctx.logger.info(f"Got a message from {sender}: {item.text}")
+                # Handle the text message
+                await process_chat_message(ctx, sender, item.text)
+            else:
+                # If we get an error, send it back as a chat message
+                await ctx.send(
+                    sender,
+                    create_text_chat(f"Error: Unexpected content type", end_session=True)
+                )
+    except Exception as e:
+        # Send errors back as chat messages
+        await ctx.send(
+            sender,
+            create_text_chat(f"Error: {str(e)}", end_session=True)
+        )
+
+@chat_proto.on_message(ChatAcknowledgement)
+async def handle_ack(ctx: Context, sender: str, msg: ChatAcknowledgement):
+    ctx.logger.info(
+        f"Got an acknowledgement from {sender} for {msg.acknowledged_msg_id}"
+    )
+
+async def process_chat_message(ctx: Context, sender: str, text_content: str):
+    """Process the actual chat message content"""
+    try:
+        # Check if this is an initialization message
+        if ',' in text_content:
+            try:
+                canvas_token, school_domain = map(str.strip, text_content.split(','))
+                success = initialize_rag_system(canvas_token, school_domain)
+                if success:
+                    await ctx.send(sender, create_text_chat("RAG system initialized successfully. You can now query the knowledge base."))
+                else:
+                    await ctx.send(sender, create_text_chat("Failed to initialize RAG system. Please check your credentials."))
+            except ValueError:
+                await ctx.send(sender, create_text_chat("Invalid format. Please provide credentials in the format: <canvas_token>, <school_domain>"))
+            return
+
+        # If not initialization, check if system is ready
+        if vector_store is None or retrieval_chain is None:
+            await ctx.send(sender, create_text_chat("RAG system not initialized. Please provide credentials in the format: <canvas_token>, <school_domain>"))
+            return
+
+        # Process the query using sync invoke since we're in an async context
+        response = retrieval_chain.invoke({"input": text_content})
+        response_text = response.get("answer", "Sorry, I couldn't find relevant information in the knowledge base.")
+        
+        # Send the response back
+        await ctx.send(sender, create_text_chat(response_text))
+    except Exception as e:
+        error_msg = f"Error querying knowledge base: {str(e)}"
+        ctx.logger.error(error_msg)
+        await ctx.send(sender, create_text_chat(error_msg))
+
 query_agent.include(problem_protocol)
+query_agent.include(chat_proto)
 
 
 @query_agent.on_message(model=RequestResponse)

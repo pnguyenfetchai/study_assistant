@@ -11,8 +11,7 @@
 /knowledgebase/private_keys.json
 /knowledgebase/.env
 /knowledgebase/__pycache__/
-/knowledgebase/faiss_db/
-/knowledgebase/course_files/
-/knowledgebase/credentials.txt
+/knowledgebase/query_agent/course_files/
+/knowledgebase/query_agent/faiss_db/
 
 knowledgebase/query_agent/__pycache__
