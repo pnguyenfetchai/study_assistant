@@ -16,7 +16,7 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Agent addresses
-QUERY_AGENT_ADDRESS = "agent1qvejzzpsu5zxqhm6elej0a9g680ayadg7a4hnsvw20qf3kqhtqrhg3qjwq6"
+QUERY_AGENT_ADDRESS = "agent1qta523twlmzwxw8kcl98sv3kk67qeg8c0k9x7whdktsa3tw6paa8yyez7wv"
 CANVAS_AGENT_ADDRESS = "agent1q0uvz4t5tv8dcahzwgks4pymps98ua9m2rnpfguxrzk55zv0xg2p2ye834v"
 ANALYZER_AGENT_ADDRESS = "agent1qdsp54ynk7gaeyn9h04dzjm9ndxhg9nlgjls8a49e9jxdhk2tap8wg78mf8"
 

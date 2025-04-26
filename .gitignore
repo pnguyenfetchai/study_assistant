@@ -14,4 +14,4 @@
 /knowledgebase/query_agent/course_files/
 /knowledgebase/query_agent/faiss_db/
 
-knowledgebase/query_agent/__pycache__
+knowledgebase/query_agent/__pycache__ .

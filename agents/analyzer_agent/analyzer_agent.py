@@ -6,6 +6,7 @@ import os
 from openai import OpenAI
 import sys
 sys.path.append('..')
+from chat_protocol import chat_proto
 from query_protocol import query_protocol, RequestResponse
 from uagents_core.contrib.protocols.chat import ChatMessage, TextContent, ChatAcknowledgement, chat_protocol_spec
 
@@ -15,10 +16,9 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Agent addresses
 CANVAS_AGENT_ADDRESS = "agent1q0uvz4t5tv8dcahzwgks4pymps98ua9m2rnpfguxrzk55zv0xg2p2ye834v"
-RESPONDENT_AGENT_ADDRESS = "agent1qwh55uf7y5k0lv4w2vf5d2emu5gu7sf8mk9uwlmgfqpyf6k5unjywyd028w"
+RESPONDENT_AGENT_ADDRESS = "agent1qwxjdy69tu8kmsw6mvq6hsan8ns52axnxhr6vp2aypm409hd8qe8c5augqj"
 
 client = OpenAI(api_key=OPENAI_API_KEY)
-chat_proto = Protocol(spec=chat_protocol_spec)
 
 @query_protocol.on_message(model=RequestResponse)
 async def analyze_query(ctx: Context, sender: str, msg: RequestResponse):

@@ -1,5 +1,5 @@
 ![tag:education](https://img.shields.io/badge/education-4A90E2)
-![tag:canvas-lms](https://img.shields.io/badge/canvas--lms-E72429)
+![tag:innovationlab](https://img.shields.io/badge/innovationlab-3D8BD3)
 
 **Description**: The Visualization Agent specializes in creating visual representations of data. It can process natural language requests and generate appropriate visualizations using matplotlib, making complex data more accessible and understandable through charts, graphs, and other visual formats.
 
