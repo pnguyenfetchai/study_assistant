@@ -21,7 +21,6 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 problem_solver_agent = Agent(
     name="problem_solver_agent",
     port=8004,
-    endpoint=["http://127.0.0.1:8004/submit"],
     mailbox=True
 )
 

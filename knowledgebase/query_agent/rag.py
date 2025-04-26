@@ -41,7 +41,6 @@ class RequestResponse(Model):
 query_agent = Agent(
     name="query_agent",
     port=8001,
-    endpoint=["http://127.0.0.1:8001/submit"],
     mailbox=True
 )
 

@@ -36,7 +36,6 @@ class ToolResponse(Model):
 respondent_agent = Agent(
     name="respondent_agent",
     port=8007,
-    endpoint=["http://127.0.0.1:8007/submit"], 
     mailbox=True
 )
 

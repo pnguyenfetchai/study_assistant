@@ -75,7 +75,6 @@ async def check_response(question: str, answer: str) -> bool:
 analyzer_agent = Agent(
     name="analyzer_agent",
     port=8006,
-    endpoint=["http://127.0.0.1:8006/submit"], 
     mailbox=True
 )
 
