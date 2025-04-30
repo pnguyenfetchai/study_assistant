@@ -8,6 +8,9 @@ services:
     env_file: .env
     networks:
       - agent-network
+    volumes:
+      - query_agent_data:/app/course_files
+      - query_agent_index:/app/faiss_index
 
   analyzer-agent:
     build:
@@ -59,3 +62,7 @@ services:
 networks:
   agent-network:
     driver: bridge
+
+volumes:
+  query_agent_data:
+  query_agent_index:
