@@ -15,3 +15,4 @@
 /knowledgebase/query_agent/faiss_db/
 
 knowledgebase/query_agent/__pycache__ .
+.env

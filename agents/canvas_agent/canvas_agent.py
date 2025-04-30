@@ -95,7 +95,30 @@ def classify_query_with_llm(query: str) -> str:
     completion = client.chat.completions.create(
         model="gpt-4",
         messages=[
-            {"role": "system", "content": "You are an AI assistant that classifies user queries into 'general' or 'problem'. Return ONLY 'general' or 'problem' as response."},
+            {"role": "system", "content": 
+            """You are an AI assistant that classifies user queries into 'general' or 'problem'. Return ONLY 'general' or 'problem' as response.
+            Classify the following query as either 'general' or 'problem':
+
+            Respond 'general' if the query is about topics like school materials, class information, schedules, or logistics.
+            Examples of 'general':
+
+            "When is my math class?"
+
+            "What textbook do I need for chemistry?"
+
+            "What time does school start?"
+
+            Respond 'problem' if the query requires solving or working through something, like a math, physics, or logic problem.
+            Examples of 'problem':
+
+            "Solve for x: 2x + 3 = 7"
+
+            "What is the acceleration of a car given these forces?"
+
+            "How do you calculate the derivative of x²?"
+
+            IMPORTANT: Only reply with 'general' or 'problem' — nothing else and ABSOLUTELY NOTHING ELSE.
+            IMPORTANT: if user provide you credentials regarding their school domain or canvas token or anything related to that sort, ALWAYS ANSWER 'general' """},
             {"role": "user", "content": f"Classify this query: {query}"}
         ]
     )

@@ -24,7 +24,7 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 async def analyze_query(ctx: Context, sender: str, msg: RequestResponse):
     """Compares the response with the original request and forwards accordingly."""
     ctx.logger.info(f"Received query analysis request from {sender}")
-    ctx.logger.info(f"ryan pham: {msg.request} |||| {msg.response}")
+    ctx.logger.info(f"Analyzing: {msg.request} |||| {msg.response}")
     
     is_correct = await check_response(msg.request, msg.response)
     
@@ -32,8 +32,9 @@ async def analyze_query(ctx: Context, sender: str, msg: RequestResponse):
         ctx.logger.info("Response is correct. Forwarding to respondent agent for tool analysis.")
         await ctx.send(RESPONDENT_AGENT_ADDRESS, RequestResponse(request=msg.request, response=msg.response))
     else:
-        ctx.logger.info("Response is incorrect. Forwarding to canvas agent for reevaluation.")
-        await ctx.send(CANVAS_AGENT_ADDRESS, RequestResponse(request=msg.request, response=msg.response))
+        # Instead of sending back to canvas agent, try to improve the response
+        ctx.logger.info("Response needs improvement, sending to respondent agent with improvement flag")
+        await ctx.send(RESPONDENT_AGENT_ADDRESS, RequestResponse(request=msg.request + "\n\nPlease improve this response.", response=msg.response ))
 
 @chat_proto.on_message(ChatMessage)
 async def handle_chat_message(ctx: Context, sender: str, msg: ChatMessage):

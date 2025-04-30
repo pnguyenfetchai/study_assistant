@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  query-agent:
+    build:
+      context: .
+      dockerfile: knowledgebase/query_agent/Dockerfile
+    env_file: .env
+    networks:
+      - agent-network
+
+  analyzer-agent:
+    build:
+      context: .
+      dockerfile: agents/analyzer_agent/Dockerfile
+    env_file: .env
+    networks:
+      - agent-network
+
+  problem-solver-agent:
+    build:
+      context: .
+      dockerfile: agents/problem_solver_agent/Dockerfile
+    env_file: .env
+    networks:
+      - agent-network
+
+  respondent-agent:
+    build:
+      context: .
+      dockerfile: agents/respondent_agent/Dockerfile
+    env_file: .env
+    networks:
+      - agent-network
+
+  visualization-agent:
+    build:
+      context: .
+      dockerfile: agents/tools/visualization_agent/Dockerfile
+    env_file: .env
+    networks:
+      - agent-network
+
+  canvas-agent:
+    build:
+      context: .
+      dockerfile: agents/canvas_agent/Dockerfile
+    image: study_assistant-canvas-agent
+    env_file: .env
+    depends_on:
+      - query-agent
+      - analyzer-agent
+      - problem-solver-agent
+      - respondent-agent
+      - visualization-agent
+    networks:
+      - agent-network
+
+networks:
+  agent-network:
+    driver: bridge
