@@ -8,6 +8,8 @@ services:
     env_file: .env
     networks:
       - agent-network
+    ports:
+      - "8045:8045"
     volumes:
       - query_agent_data:/app/course_files
       - query_agent_index:/app/faiss_index
@@ -19,6 +21,8 @@ services:
     env_file: .env
     networks:
       - agent-network
+    ports:
+      - "8040:8040"
 
   problem-solver-agent:
     build:
@@ -27,6 +31,8 @@ services:
     env_file: .env
     networks:
       - agent-network
+    ports:
+      - "8042:8042"
 
   respondent-agent:
     build:
@@ -35,6 +41,8 @@ services:
     env_file: .env
     networks:
       - agent-network
+    ports:
+      - "8043:8043"
 
   visualization-agent:
     build:
@@ -43,6 +51,8 @@ services:
     env_file: .env
     networks:
       - agent-network
+    ports:
+      - "8044:8044"
 
   canvas-agent:
     build:
@@ -58,6 +68,8 @@ services:
       - visualization-agent
     networks:
       - agent-network
+    ports:
+      - "8041:8041"
 
 networks:
   agent-network:
