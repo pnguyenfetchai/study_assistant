@@ -60,8 +60,8 @@ if not OPENAI_API_KEY:
 embedding_model = OpenAIEmbeddings(api_key=OPENAI_API_KEY)
 
 # Agent addresses
-ANALYZER_AGENT = "agent1qdsp54ynk7gaeyn9h04dzjm9ndxhg9nlgjls8a49e9jxdhk2tap8wg78mf8"
-CANVAS_AGENT = "agent1q0uvz4t5tv8dcahzwgks4pymps98ua9m2rnpfguxrzk55zv0xg2p2ye834v"
+ANALYZER_AGENT = " agent1qfpkhksvee55f2seqvejtsrr6wr9s4gcfz8as53htmqyr6uuvhewjxnvu07"
+CANVAS_AGENT = "agent1q053mc5vkw5pxx0xhx54v4y2l34chwyn4jsw9eahvlrfrt8pfc73c6arh6y"
 
 class QueryRequest(Model):
     query: str
@@ -73,6 +73,7 @@ class RequestResponse(Model):
 query_agent = Agent(
     name="query_agent",
     port=8001,
+    seed="query agent secret phrase deployment",
     mailbox=True
 )
 

@@ -23,6 +23,8 @@ RUN chmod 0644 /etc/cron.d/cleanup-cron
 RUN crontab /etc/cron.d/cleanup-cron
 RUN touch /var/log/cron.log
 
+EXPOSE 8045
+
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 

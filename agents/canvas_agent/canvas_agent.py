@@ -13,10 +13,10 @@ from datetime import datetime
 load_dotenv()
 
 # Agent addresses
-QUERY_AGENT_ADDRESS = "agent1qta523twlmzwxw8kcl98sv3kk67qeg8c0k9x7whdktsa3tw6paa8yyez7wv"
-PROBLEM_SOLVER_AGENT_ADDRESS = "agent1qgkm7pnxx7wwq8wnau9w43vv7z7nhu9hpkr5dvx8n3c283hjpqt6z4375jp"
-ANALYZER_AGENT_ADDRESS = "agent1qdsp54ynk7gaeyn9h04dzjm9ndxhg9nlgjls8a49e9jxdhk2tap8wg78mf8"
-CANVAS_AGENT_ADDRESS = "agent1q0uvz4t5tv8dcahzwgks4pymps98ua9m2rnpfguxrzk55zv0xg2p2ye834v"
+QUERY_AGENT_ADDRESS = "agent1qdc6s0r8crh5ayrzea0tnqupnvy2jtfg495n4ufj8ls30akv9c0jx0rdge9"
+PROBLEM_SOLVER_AGENT_ADDRESS = "agent1qfxhmvjjwah4jqzh9vhjda3aa6y33nz2knw8xuesa0d6m0j7kg4mguhax0n"
+ANALYZER_AGENT_ADDRESS = "agent1qfpkhksvee55f2seqvejtsrr6wr9s4gcfz8as53htmqyr6uuvhewjxnvu07"
+CANVAS_AGENT_ADDRESS = "agent1q053mc5vkw5pxx0xhx54v4y2l34chwyn4jsw9eahvlrfrt8pfc73c6arh6y"
 
 # Load environment variables for OpenAI key
 load_dotenv()
@@ -45,7 +45,7 @@ def clear_storage(ctx: Context):
 canvas_agent = Agent(
     name="canvas_agent",
     port=8003,
-    seed="canvas agent secret phrase",
+    seed="canvas agent secret phrase deployment",
     mailbox=True
 )
 

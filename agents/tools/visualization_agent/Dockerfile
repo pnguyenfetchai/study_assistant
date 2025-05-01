@@ -15,6 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY agents/tools/visualization_agent/ .
 COPY agents/chat_protocol.py .
 COPY agents/visualization_protocol.py .
+EXPOSE 8044
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1

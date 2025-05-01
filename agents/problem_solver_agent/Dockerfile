@@ -11,6 +11,7 @@ COPY agents/problem_solver_agent/ .
 COPY agents/chat_protocol.py .
 COPY agents/problem_protocol.py .
 COPY agents/query_protocol.py .
+EXPOSE 8042
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1

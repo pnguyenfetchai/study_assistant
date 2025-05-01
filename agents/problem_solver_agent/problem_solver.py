@@ -16,14 +16,15 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Agent addresses
-QUERY_AGENT_ADDRESS = "agent1qta523twlmzwxw8kcl98sv3kk67qeg8c0k9x7whdktsa3tw6paa8yyez7wv"
-CANVAS_AGENT_ADDRESS = "agent1q0uvz4t5tv8dcahzwgks4pymps98ua9m2rnpfguxrzk55zv0xg2p2ye834v"
-ANALYZER_AGENT_ADDRESS = "agent1qdsp54ynk7gaeyn9h04dzjm9ndxhg9nlgjls8a49e9jxdhk2tap8wg78mf8"
+QUERY_AGENT_ADDRESS = "agent1qdc6s0r8crh5ayrzea0tnqupnvy2jtfg495n4ufj8ls30akv9c0jx0rdge9"
+CANVAS_AGENT_ADDRESS = "agent1q053mc5vkw5pxx0xhx54v4y2l34chwyn4jsw9eahvlrfrt8pfc73c6arh6y"
+ANALYZER_AGENT_ADDRESS = "agent1qfpkhksvee55f2seqvejtsrr6wr9s4gcfz8as53htmqyr6uuvhewjxnvu07"
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 problem_solver_agent = Agent(
     name="problem_solver_agent",
+    seed="problem solver agent secret phrase deployment",
     port=8004,
     mailbox=True
 )

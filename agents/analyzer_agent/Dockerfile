@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY agents/analyzer_agent/ .
 COPY agents/chat_protocol.py .
 COPY agents/query_protocol.py .
+EXPOSE 8040
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1

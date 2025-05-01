@@ -18,9 +18,9 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Agent addresses
-CANVAS_AGENT_ADDRESS = "agent1q0uvz4t5tv8dcahzwgks4pymps98ua9m2rnpfguxrzk55zv0xg2p2ye834v"
-RESPONDENT_AGENT_ADDRESS = "agent1qwh55uf7y5k0lv4w2vf5d2emu5gu7sf8mk9uwlmgfqpyf6k5unjywyd028w"
-VISUALIZATION_AGENT_ADDRESS = "agent1qfaerh49a864tehhfsg09njkx2fuhs4xkysdj4n4gam90ktt9rldqve9xvl"
+CANVAS_AGENT_ADDRESS = "agent1q053mc5vkw5pxx0xhx54v4y2l34chwyn4jsw9eahvlrfrt8pfc73c6arh6y"
+RESPONDENT_AGENT_ADDRESS = "agent1qtvmda3cltanzcewccy6ln2ydw7k4sjs52fp8h28uj5700kk35l32ect4qk"
+VISUALIZATION_AGENT_ADDRESS = "agent1q2xg3kk7xt5yjyk6jmpse2xlfvk36gqa5v67ln7vma4vzptghqeavcfz3ta"
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -36,6 +36,7 @@ class ToolResponse(Model):
 respondent_agent = Agent(
     name="respondent_agent",
     port=8007,
+    seed="respondent agent secret phrase deployment",
     mailbox=True
 )
 

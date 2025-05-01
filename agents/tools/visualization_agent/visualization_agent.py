@@ -30,6 +30,7 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 visualization_agent = Agent(
     name="visualization_agent",
     port=8009,
+    seed="visualization agent secret phrase deployment",
     mailbox=True
 )
 
