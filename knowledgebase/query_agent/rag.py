@@ -60,7 +60,7 @@ if not OPENAI_API_KEY:
 embedding_model = OpenAIEmbeddings(api_key=OPENAI_API_KEY)
 
 # Agent addresses
-ANALYZER_AGENT = " agent1qfpkhksvee55f2seqvejtsrr6wr9s4gcfz8as53htmqyr6uuvhewjxnvu07"
+ANALYZER_AGENT = "agent1qfpkhksvee55f2seqvejtsrr6wr9s4gcfz8as53htmqyr6uuvhewjxnvu07"
 CANVAS_AGENT = "agent1q053mc5vkw5pxx0xhx54v4y2l34chwyn4jsw9eahvlrfrt8pfc73c6arh6y"
 
 class QueryRequest(Model):
@@ -330,12 +330,7 @@ async def handle_request(ctx: Context, sender: str, query: RequestResponse):
             # Use the retrieval chain directly instead of manual document handling
             ctx.logger.info("Using retrieval chain to generate response")
             
-            # For course enrollment queries, prioritize course list documents
-            if any(word in query.request.lower() for word in ['enrolled', 'courses', 'taking']):
-                search_kwargs = {"filter": {"type": "course_list"}}
-                retrieved_docs = retriever.invoke(query.request, search_kwargs=search_kwargs)
-            else:
-                retrieved_docs = retriever.invoke(query.request)
+            retrieved_docs = retriever.invoke(query.request)
                 
             context = "\n".join([doc.page_content for doc in retrieved_docs])
             response = retrieval_chain.invoke({"input": query.request, "context": context})
@@ -348,8 +343,10 @@ async def handle_request(ctx: Context, sender: str, query: RequestResponse):
 
 
             if sender == CANVAS_AGENT:
+                # For canvas agent queries, send to analyzer
                 await ctx.send(ANALYZER_AGENT, RequestResponse(request=query.request, response=f"{answer}\n\nContext: {context}"))
             else:
+                # For problem solver, send back with context
                 await ctx.send(sender, RequestResponse(request=query.request, response=f"{answer}\n\nContext: {context}"))
         except Exception as e:
             ctx.logger.error(f"Error processing query: {str(e)}")
