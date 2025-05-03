@@ -1,39 +1,39 @@
 ![tag:education](https://img.shields.io/badge/education-4A90E2)
 ![tag:innovationlab](https://img.shields.io/badge/innovationlab-3D8BD3)
 
-**Description**: The Visualization Agent specializes in creating visual representations of data. It can process natural language requests and generate appropriate visualizations using matplotlib, making complex data more accessible and understandable through charts, graphs, and other visual formats.
+**Description**: The Respondent Agent acts as an intelligent response coordinator, determining when to use specialized tools or visualizations. It analyzes requests and routes them to appropriate agents or tools while maintaining conversation context and ensuring coherent responses.
 
 **Input Data Models**
 
 ```python
-class ToolRequest(Model):
-    params: Dict[str, Any]  # Visualization parameters
+class RequestResponse(Model):
+    request: str   # Original query
+    response: str  # Response to process
 
-class ChatMessage(Model):
-    content: List[Content]  # Visualization request
-    timestamp: datetime
-    msg_id: UUID
+class ToolRequest(Model):
+    params: Dict[str, Any]    # Query for tool selection
 ```
 
 **Output Data Models**
 
 ```python
-class ToolResponse(Model):
-    result: Any  # Generated visualization
+class ImageResponse(Model):
+    request: str  # Original request that generated this image
+    image_data: str  # Base64 encoded image
+    image_type: str  # e.g., 'png', 'jpeg'
+    content_type: str  # e.g., 'image/png', 'image/jpeg'
 
-class ChatMessage(Model):
-    content: List[TextContent]  # Base64 encoded image
-    timestamp: datetime
-    msg_id: UUID
+class ToolResponse(Model):
+    result: Any
 ```
 
 **Features**:
 
-- Dynamic pie chart generation
-- Natural language data extraction
-- Base64 image encoding
-- Direct chat interface
-- Flexible visualization options
+- Intelligent tool selection
+- Visualization request handling
+- Response formatting and enhancement
+- Multi-agent coordination
+- Context-aware processing
 
 **Setup**:
 
@@ -41,27 +41,24 @@ class ChatMessage(Model):
    ```
    OPENAI_API_KEY=your_openai_key
    ```
-2. Install required visualization libraries:
-   ```
-   pip install matplotlib
-   ```
-3. Configure messaging protocols
+2. Configure agent addresses
+3. Set up visualization integration
 
 **Example Usage**:
 
 ```python
-# Create a pie chart
-"Create a pie chart showing: Chrome 60%, Firefox 25%, Safari 15%"
+# Request with potential visualization
+"Show me the distribution of grades in the class"
 
-# Generate data visualization
-"Visualize this data distribution: A=30, B=45, C=25"
+# Complex query requiring tools
+"Analyze this dataset and show key trends"
 
-# Custom chart request
-"Show me a breakdown of student grades: A=15, B=40, C=30, D=10, F=5"
+# General response processing
+"Summarize these results and highlight important points"
 ```
 
 **Protocol Integration**:
 
-- Visualization Protocol: For internal requests
-- Chat Protocol: For direct user interaction
-- Tool Protocol: For specific visualization tasks
+- Query Protocol: For processing requests
+- Visualization Protocol: For creating visual aids
+- Response Protocol: For coordinating responses
